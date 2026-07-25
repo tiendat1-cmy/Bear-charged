@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trang đăng nhập</title>
+        <link rel="stylesheet" href="../css/register.css" />
+    <!-- linh chữ -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+      rel="stylesheet"
+    />
+    <!-- linh incon -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+<body>
+
+  <section class="wrapper">
+    <form class="card" id="registerForm">
+      <h1>Tạo tài khoản mới</h1>
+      <p class="subtitle">Điền thông tin để đăng ký</p>
+
+      <!-- Họ và tên -->
+      <div class="form-group">
+        <label for="fullname">Họ và tên</label>
+        <input
+          type="text"
+          id="fullname"
+          placeholder="Nguyễn Văn A"
+          oninput=""
+          autocomplete="name"
+        />
+        <span class="err" id="err-fullname"></span>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          placeholder="example@email.com"
+          oninput="clearErr('email')"
+          autocomplete="email"
+        />
+        <span class="err" id="err-email"></span>
+      </div>
+
+      <!-- Tên đăng nhập -->
+      <div class="form-group">
+        <label for="username">Tên đăng nhập</label>
+        <input
+          type="text"
+          id="username"
+          placeholder="username"
+          oninput="clearErr('username')"
+          autocomplete="username"
+        />
+        <span class="err" id="err-username"></span>
+      </div>
+
+      <!-- Mật khẩu -->
+      <div class="form-group">
+        <label for="password">Mật khẩu</label>
+        <div class="input-wrap">
+          <input
+            type="password"
+            id="password"
+            placeholder="Tối thiểu 8 ký tự, có ký tự đặc biệt"
+            oninput="clearErr('password')"
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="eye-btn"
+            onclick="togglePw('password', this)"
+            aria-label="Hiện/ẩn mật khẩu"
+          >
+            <i class="fa-solid fa-eye-slash"></i>
+          </button>
+        </div>
+        <span class="err" id="err-password"></span>
+      </div>
+
+      <!-- Xác nhận mật khẩu -->
+      <div class="form-group">
+        <label for="confirm">Xác nhận mật khẩu</label>
+        <div class="input-wrap">
+          <input
+            type="password"
+            id="confirm"
+            placeholder="Nhập lại mật khẩu"
+            oninput="clearErr('confirm')"
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="eye-btn"
+            onclick="togglePw('confirm', this)"
+            aria-label="Hiện/ẩn mật khẩu"
+          >
+            <i class="fa-solid fa-eye-slash"></i>
+          </button>
+        </div>
+        <span class="err" id="err-confirm"></span>
+      </div>
+
+      <!-- Điều khoản -->
+      <div class="form-group form-group--checkbox">
+        <label class="checkbox-label">
+          <input type="checkbox" id="terms" onchange="clearErr('terms')" />
+          Tôi đồng ý với
+          <a href="https://shinhan.com.vn/vi/page/dieu-khoan-su-dung.html" target="_blank">điều khoản sử dụng</a>
+        </label>
+        <span class="err" id="err-terms"></span>
+      </div>
+
+      <button class="btn-register" type="submit">Đăng ký</button>
+
+      <p class="login-hint">
+        Đã có tài khoản? <a href="./login.html">Đăng nhập</a>
+      </p>
+    </form>
+
+    <!-- Toast — chỉ 1 cái duy nhất -->
+    <div class="toast hidden" id="toast">
+      <div class="toast-icon"><i class="fa-solid fa-check"></i></div>
+      <div class="toast-body">
+        <p class="toast-title">Đăng ký thành công!</p>
+        <p class="toast-sub">Chào mừng bạn đến với Bear Charged 🎉</p>
+      </div>
+      <button class="toast-close" onclick="closeToast()" aria-label="Đóng">✕</button>
+    </div>
+  </section>
+
+  <script src="../js/register.js" defer></script>
+</body>
+</html>
