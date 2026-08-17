@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý sản phẩm</title>
+    <link rel="stylesheet" href="../css/post.css">
+    <!-- linh chữ -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+      rel="stylesheet"
+    />
+    <!-- linh incon -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
+</head>
+<body>
+
+<div class="container">
+    <aside class="sidebar">
+        <div class="logo">
+            <i class="fa-solid fa-store"></i>
+            <h2>Bear pos</h2>
+        </div>
+        <ul>
+             <li >
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="order.html">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    Đơn hàng
+                </a>
+            </li>
+            <li class="active">
+                <a href="post.html">
+                    <i class="fa-solid fa-box"></i>
+                    Sản phẩm
+                </a>
+            </li>
+            <!-- <li>
+                <a href="#">
+                    <i class="fa-solid fa-users"></i>
+                    Khách hàng
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class="fa-solid fa-chart-column"></i>
+                    Thống kê
+                </a>
+            </li> -->
+
+            <li>
+                <a href="settings.html">
+                    <i class="fa-solid fa-gear"></i>
+                    Cài đặt
+                </a>
+            </li>
+        </ul>
+        <button id="logoutBtn">
+            <i class="fa-solid fa-right-from-bracket"></i>
+                Đăng xuất
+        </button>
+    </aside>
+
+
+    <main class="main">
+        <header class="topbar">
+            <h1>Quản lý sản phẩm</h1>
+            <div class="actions">
+                <div class="search">
+                    <input type="text" id="searchInput" placeholder="Tìm theo ID hoặc tên sản phẩm...">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <button class="add-btn" id="addBtn">
+                    <i class="fa-solid fa-plus"></i>
+                    Thêm sản phẩm
+                </button>
+            </div>
+        </header>
+
+
+
+        <section class="stats">
+
+            <div class="card">
+                <h3 id="totalCount">0</h3>
+                <p>Tổng sản phẩm</p>
+            </div>
+
+            <div class="card">
+                <h3 id="lowStockCount">0</h3>
+                <p>Sắp hết hàng</p>
+            </div>
+
+            <div class="card">
+                <h3 id="outStockCount">0</h3>
+                <p>Hết hàng</p>
+            </div>
+
+        </section>
+
+
+
+        <section class="table-box">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tên</th>
+                    <th>Danh mục</th>
+                    <th>Giá</th>
+                    <th>Tồn kho</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+                </thead>
+                <tbody id="productTableBody">
+                <!-- render bằng JS -->
+                </tbody>
+            </table>
+
+            <div class="pagination" id="pagination">
+                <!-- render bằng JS -->
+            </div>
+        </section>
+    </main>
+
+</div>
+
+<!-- Modal thêm / sửa sản phẩm -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2 id="modalTitle">Thêm sản phẩm</h2>
+            <button class="modal-close" id="modalCloseBtn">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="productForm">
+            <input type="hidden" id="productId">
+
+            <div class="form-group">
+                <label for="productName">Tên sản phẩm</label>
+                <input type="text" id="productName" >
+            </div>
+
+            <div class="form-group">
+                <label for="productCategory">Danh mục</label>
+                <select id="productCategory" required>
+                    <option value="">-- Chọn danh mục --</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="productPrice">Giá (đ)</label>
+                    <input type="number" id="productPrice" min="0" required placeholder="VD: 15000">
+                </div>
+
+                <div class="form-group">
+                    <label for="productStock">Tồn kho</label>
+                    <input type="number" id="productStock" min="0" required placeholder="VD: 45">
+                </div>
+            </div>
+
+            <p class="form-error" id="formError"></p>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" id="cancelBtn">Hủy</button>
+                <button type="submit" class="btn-save" id="saveBtn">Lưu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Toast xác nhận xóa -->
+<div class="modal-overlay" id="deleteOverlay">
+    <div class="modal-box modal-small">
+        <div class="modal-header">
+            <h2>Xác nhận xóa</h2>
+            <button class="modal-close" id="deleteCloseBtn">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <p class="confirm-text">Bạn có chắc muốn xóa sản phẩm <strong id="deleteProductName"></strong> không?</p>
+        <div class="modal-actions">
+            <button type="button" class="btn-cancel" id="deleteCancelBtn">Hủy</button>
+            <button type="button" class="btn-delete-confirm" id="deleteConfirmBtn">Xóa</button>
+        </div>
+    </div>
+</div>
+
+    <script src="../js/post.js"></script>
+</body>
+</html>

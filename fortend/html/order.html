@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý sản phẩm</title>
+    <link rel="stylesheet" href="../css/order.css">
+    <!-- linh chữ -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+      rel="stylesheet"
+    />
+    <!-- linh incon -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
+</head>
+<body>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+        <div class="logo">
+            <i class="fa-solid fa-store"></i>
+            <h2>Bear pos</h2>
+        </div>
+        <ul>
+             <li >
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="active">
+                <a href="order.html">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    Đơn hàng
+                </a>
+            </li>
+            <li >
+                <a href="post.html">
+                    <i class="fa-solid fa-box"></i>
+                    Sản phẩm
+                </a>
+            </li>
+            <!-- <li>
+                <a href="#">
+                    <i class="fa-solid fa-users"></i>
+                    Khách hàng
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class="fa-solid fa-chart-column"></i>
+                    Thống kê
+                </a>
+            </li> -->
+
+            <li>
+                <a href="settings.html">
+                    <i class="fa-solid fa-gear"></i>
+                    Cài đặt
+                </a>
+            </li>
+        </ul>
+        <button id="logoutBtn">
+            <i class="fa-solid fa-right-from-bracket"></i>
+                Đăng xuất
+        </button>
+    </aside>
+<!-- nội dung chính -->
+    <div class="main-area" id="mainAreaElement">
+      <header class="topbar" id="topbarElement">
+        <div class="topbar-title">
+          <h1>Màn hình bán hàng</h1>
+          <p>Tìm kiếm sản phẩm và tạo đơn hàng mới</p>
+        </div>
+
+        <div class="topbar-stats">
+          <div class="topbar-stat-card">
+            <span class="topbar-stat-label">Số sản phẩm</span>
+            <span class="topbar-stat-value" id="statTotalProducts">0</span>
+          </div>
+          <div class="topbar-stat-card">
+            <span class="topbar-stat-label">Mặt hàng trong giỏ</span>
+            <span class="topbar-stat-value" id="statCartItems">0</span>
+          </div>
+          <div class="topbar-stat-card topbar-stat-card--highlight">
+            <span class="topbar-stat-label">Tổng tiền giỏ hàng</span>
+            <span class="topbar-stat-value" id="statCartTotal">0đ</span>
+          </div>
+        </div>
+      </header>
+      <main class="order-layout">
+        <section class="panel panel-search">
+          <div class="search-box-wrapper">
+            <div class="search-box">
+              <span class="search-box-icon">🔍</span>
+              <input
+                type="text"
+                id="productSearchInput"
+                class="search-box-input"
+                placeholder="Tìm sản phẩm..."
+                autocomplete="off"
+              />
+              <button type="button" class="search-box-clear" id="searchClearButton" title="Xóa tìm kiếm">✕</button>
+            </div>
+            <div class="search-dropdown" id="searchDropdown"></div>
+          </div>
+
+          <div class="product-grid-header">
+            <h2>Danh sách sản phẩm</h2>
+            <span class="product-grid-count" id="productGridCount">0 sản phẩm</span>
+          </div>
+
+          <div class="product-grid" id="productGrid">
+          </div>
+        </section>
+        <section class="panel panel-cart">
+          <div class="cart-header">
+            <h2>Giỏ hàng</h2>
+            <button type="button" class="cart-clear-button" id="cartClearButton">Xóa hết</button>
+          </div>
+
+          <div class="cart-list" id="cartList">
+          </div>
+
+          <div class="cart-empty-state" id="cartEmptyState">
+            <span class="cart-empty-icon">🛍️</span>
+            <p>Giỏ hàng đang trống</p>
+            <span>Tìm và chọn sản phẩm để bắt đầu</span>
+          </div>
+          <!-- tính tiền -->
+          <div class="cart-summary">
+            <div class="cart-summary-row">
+              <span>Tạm tính</span>
+              <span id="summarySubtotal">0đ</span>
+            </div>
+
+            <div class="cart-summary-row">
+              <span>Giảm giá</span>
+              <div class="cart-summary-discount-input">
+                <input type="number" id="discountInput" min="0" value="0" />
+                <select id="discountTypeSelect">
+                  <option value="percent">%</option>
+                  <option value="amount">đ</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="cart-summary-row">
+              <span>VAT (<span id="vatPercentLabel">8</span>%)</span>
+              <span id="summaryVat">0đ</span>
+            </div>
+
+            <div class="cart-summary-row cart-summary-row--total">
+              <span>Tổng thanh toán</span>
+              <span id="summaryTotal">0đ</span>
+            </div>
+          </div>
+
+          <div class="payment-section">
+            <div class="payment-field">
+              <label for="customerPaidInput">Tiền khách đưa</label>
+              <input type="text" id="customerPaidInput" placeholder="0" inputmode="numeric" />
+            </div>
+
+            <div class="payment-field">
+              <label>Tiền thừa</label>
+              <div class="payment-change" id="paymentChangeDisplay">0đ</div>
+            </div>
+
+            <p class="payment-error" id="paymentErrorMessage"></p>
+
+            <button type="button" class="payment-submit-button" id="paymentSubmitButton" disabled>
+              Thanh toán
+            </button>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+  <div class="modal-overlay" id="receiptModalOverlay">
+    <div class="modal-box">
+
+      <div class="modal-box-header no-print">
+        <h2>Hóa đơn thanh toán</h2>
+        <button type="button" class="modal-close-button" id="receiptCloseButton">✕</button>
+      </div>
+
+      <div class="receipt-print-area" id="receiptPrintArea">
+        <div class="receipt-shop-header">
+          <h3>BEAR POS</h3>
+          <p>Cửa hàng tiện lợi Gấu Con</p>
+          <p>Địa chỉ: 123 Đường ABC, Quận XYZ, TP. Hà Nội</p>
+          <p>Hotline: 1900 1234</p>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-meta">
+          <div class="receipt-meta-row">
+            <span>Số hóa đơn:</span>
+            <strong id="receiptCode">HD00001</strong>
+          </div>
+          <div class="receipt-meta-row">
+            <span>Ngày giờ:</span>
+            <strong id="receiptDateTime">--</strong>
+          </div>
+          <div class="receipt-meta-row">
+            <span>Thu ngân:</span>
+            <strong>Nhân viên bán hàng</strong>
+          </div>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <table class="receipt-table">
+          <thead>
+            <tr>
+              <th>Sản phẩm</th>
+              <th>SL</th>
+              <th>Đơn giá</th>
+              <th>Thành tiền</th>
+            </tr>
+          </thead>
+          <tbody id="receiptItemsBody">
+          </tbody>
+        </table>
+
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-totals">
+          <div class="receipt-totals-row">
+            <span>Tạm tính</span>
+            <span id="receiptSubtotal">0đ</span>
+          </div>
+          <div class="receipt-totals-row">
+            <span>Giảm giá</span>
+            <span id="receiptDiscount">0đ</span>
+          </div>
+          <div class="receipt-totals-row">
+            <span>VAT</span>
+            <span id="receiptVat">0đ</span>
+          </div>
+          <div class="receipt-totals-row receipt-totals-row--bold">
+            <span>Tổng thanh toán</span>
+            <span id="receiptTotal">0đ</span>
+          </div>
+          <div class="receipt-totals-row">
+            <span>Khách đưa</span>
+            <span id="receiptPaid">0đ</span>
+          </div>
+          <div class="receipt-totals-row">
+            <span>Tiền thừa</span>
+            <span id="receiptChange">0đ</span>
+          </div>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <p class="receipt-thank-you">Cảm ơn quý khách và hẹn gặp lại!</p>
+      </div>
+
+      <div class="modal-box-footer no-print">
+        <button type="button" class="modal-secondary-button" id="receiptNewOrderButton">Đơn hàng mới</button>
+        <button type="button" class="modal-primary-button" id="receiptPrintButton">🖨️ In hóa đơn</button>
+      </div>
+
+    </div>
+  </div>
+  <!-- thông báo -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="../js/odrer.js"></script>
+</body>
+</html>
