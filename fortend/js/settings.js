@@ -1,7 +1,7 @@
 'use strict';
 
 // cấu hình api
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = "https://bear-charged.onrender.com";
 const ME_URL = `${API_BASE_URL}/api/auth/me`;
 const CHANGE_PASSWORD_URL = `${API_BASE_URL}/api/auth/change-password`;
 
