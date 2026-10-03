@@ -39,7 +39,7 @@ class OrderDetail(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    product_id = Column(Integer,ForeignKey("products.id", ondelete="CASCADE"),nullable=False,)
     quantity = Column(Integer, nullable=False)
     price = Column(Float, nullable=False)  # giá tại thời điểm bán, không phụ thuộc giá SP sau này
 

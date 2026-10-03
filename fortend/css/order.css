@@ -1164,8 +1164,120 @@ a {
   from { opacity: 1; }
   to { opacity: 0; transform: translateX(30px); }
 }
+/* ==================================================================
+   11b. MODAL THANH TOÁN (CASH / QR)
+================================================================== */
 
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 17, 33, 0.55);
+  z-index: 100;
+  display: none; /* JS sẽ đổi thành 'flex' khi mở */
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap-lg);
+}
 
+.modal-content {
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-strong);
+  width: 100%;
+  max-width: 380px;
+  padding: var(--gap-lg);
+  animation: modalEnter 0.2s ease;
+}
+
+.modal-content h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: var(--gap-md);
+}
+
+.modal-content .form-group {
+  margin-bottom: var(--gap-md);
+}
+
+.modal-content .form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+}
+
+.modal-content .form-group input,
+.modal-content .form-group select {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+.modal-content .form-group input:focus,
+.modal-content .form-group select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.modal-actions {
+  display: flex;
+  gap: var(--gap-sm);
+  margin-top: var(--gap-md);
+}
+
+.modal-actions button {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.modal-actions button:first-child {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.modal-actions button:first-child:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
+.modal-actions button:last-child {
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+
+.modal-actions button:last-child:hover {
+  background: var(--color-border);
+}
+.receipt-qr-section {
+  display: none;
+  text-align: center;
+  margin: var(--gap-sm) 0;
+}
+
+.receipt-qr-section.is-visible {
+  display: block;
+}
+
+.receipt-qr-section p {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 6px;
+}
+
+.receipt-qr-section img {
+  width: 160px;
+  height: 160px;
+  margin: 0 auto;
+  display: block;
+}
 /* ==================================================================
    13. RESPONSIVE
 ================================================================== */
@@ -1265,3 +1377,4 @@ a {
     max-height: none;
   }
 }
+

@@ -1,5 +1,5 @@
 // Cấu hình api
-const API_BASE_URL = "https://bear-charged.onrender.com"; // đổi theo port backend của bạn
+const API_BASE_URL = "https://bear-charged.onrender.com"; 
 const LOGIN_URL = `${API_BASE_URL}/api/auth/login`;
 
 // lấy dom dữ liệu

@@ -4,6 +4,7 @@ from app.models.order import Order, OrderDetail, OrderStatus
 from app.repositories import order_repository, product_repository
 from app.schemas.order import DiscountTypeEnum, OrderCreate
 from app.utils.exceptions import AppException
+from app.models.customer import Customer 
 
 
 def _calculate_discount(subtotal: float, discount_type: DiscountTypeEnum, discount_value: float) -> float:
@@ -54,7 +55,15 @@ def create_order(db: Session, payload: OrderCreate) -> Order:
                     f"(còn {product.quantity}, yêu cầu {item.quantity})",
                 )
             products_cache[item.product_id] = product
-
+        customer_id = payload.customer_id
+        customer_name = (payload.customer_name or "").strip()
+        if not customer_id and customer_name and customer_name != "Khách lẻ":
+            customer = db.query(Customer).filter(Customer.fullname == customer_name).first()
+            if not customer:
+                customer = Customer(fullname=customer_name)
+                db.add(customer)
+                db.flush()  # để có customer.id ngay, chưa commit
+            customer_id = customer.id
         subtotal = 0.0
         order_details = []
 
@@ -75,13 +84,13 @@ def create_order(db: Session, payload: OrderCreate) -> Order:
         total = amount_after_discount + vat_amount
 
         order = Order(
-            customer_id=payload.customer_id,
+            customer_id=customer_id,
             subtotal=subtotal,
             discount_amount=discount_amount,
             vat_amount=vat_amount,
             total=total,
             payment_method=payload.payment_method,
-            status=OrderStatus.pending,
+            status=OrderStatus.completed,
         )
 
         created_order = order_repository.create_order_with_details(db, order, order_details)

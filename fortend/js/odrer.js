@@ -56,6 +56,10 @@ const DOM = {
   receiptPrintButton: document.getElementById('receiptPrintButton'),
   receiptNewOrderButton: document.getElementById('receiptNewOrderButton'),
 
+  // QR trên hóa đơn (chỉ hiện khi thanh toán bằng QR)
+  receiptQrSection: document.getElementById('receiptQrSection'),
+  receiptQrImage: document.getElementById('receiptQrImage'),
+
   // header thống kê
   statTotalProducts: document.getElementById('statTotalProducts'),
   statCartItems: document.getElementById('statCartItems'),
@@ -98,12 +102,12 @@ const AppState = {
   vatPercent: 8,
   highlightedDropdownIndex: -1,
   lastCreatedOrder: null,
+  selectedPaymentMethod: 'CASH', // 'CASH' hoặc 'QR' — chọn trong modal thanh toán
+  customerName: 'Khách lẻ',// tên khách nhập trong modal thanh toán
+  customerPhone: '',       
 };
 
 // tải từ api
-// Map field backend (quantity) -> field nội bộ (stock) để không phải sửa lại
-// toàn bộ logic hiển thị/giỏ hàng bên dưới. icon/unit backend không có,
-// dùng giá trị mặc định.
 async function loadProductsFromApi() {
   try {
     const data = await apiRequest(`${PRODUCTS_URL}?page=1&page_size=100`);
@@ -135,7 +139,6 @@ function removeVietnameseTones(inputText) {
     .trim();
 }
 
-// tìm sản phẩm khớp với tên nhất
 function findMatchingProducts(keyword) {
   const normalizedKeyword = removeVietnameseTones(keyword);
 
@@ -288,7 +291,6 @@ function handleSearchInputKeyDown(event) {
   }
 }
 
-// cập nhật hiệu ứng
 function updateDropdownHighlight(dropdownItems) {
   dropdownItems.forEach((item, index) => {
     item.classList.toggle('is-highlighted', index === AppState.highlightedDropdownIndex);
@@ -300,7 +302,6 @@ function updateDropdownHighlight(dropdownItems) {
   }
 }
 
-// xóa toàn bộ nội dung tìm kiếm
 function handleClearSearchInput() {
   DOM.productSearchInput.value = '';
   DOM.searchClearButton.classList.remove('is-visible');
@@ -349,7 +350,6 @@ function renderProductGrid() {
   DOM.productGridCount.textContent = `${AppState.productList.length} sản phẩm`;
 }
 
-// thêm sản phẩm nếu tồn tại chỉ tăng số lượng
 function addProductToCart(product) {
   const existingCartItem = AppState.cartItemList.find((item) => item.id === product.id);
 
@@ -376,7 +376,6 @@ function addProductToCart(product) {
   updatePaymentValidation();
 }
 
-// tăng số lượng giỏ hàng lên 1
 function increaseCartItemQuantity(productId) {
   const cartItem = AppState.cartItemList.find((item) => item.id === productId);
   const product = AppState.productList.find((item) => item.id === productId);
@@ -395,7 +394,6 @@ function increaseCartItemQuantity(productId) {
   updatePaymentValidation();
 }
 
-// giảm số lượng nếu số lượng về 0 tự động xóa
 function decreaseCartItemQuantity(productId) {
   const cartItem = AppState.cartItemList.find((item) => item.id === productId);
 
@@ -414,14 +412,12 @@ function decreaseCartItemQuantity(productId) {
   updatePaymentValidation();
 }
 
-// xóa sản phẩm khỏi giỏ hàng
 function removeCartItem(productId) {
   AppState.cartItemList = AppState.cartItemList.filter((item) => item.id !== productId);
   renderCart();
   updatePaymentValidation();
 }
 
-// xóa toàn bộ sản phẩm khỏi giỏ hàng
 function clearCart() {
   if (AppState.cartItemList.length === 0) {
     return;
@@ -438,7 +434,6 @@ function clearCart() {
   showToast('Đã xóa toàn bộ giỏ hàng.', 'success');
 }
 
-// danh sách sản phẩm giỏ hàng
 function renderCart() {
   DOM.cartList.innerHTML = '';
 
@@ -491,12 +486,10 @@ function renderCart() {
   updateHeaderStatistics();
 }
 
-// giá vat
 function calculateSubtotal() {
   return AppState.cartItemList.reduce((total, item) => total + item.price * item.quantity, 0);
 }
 
-// tính số tiền giảm giá
 function calculateDiscountAmount(subtotal) {
   const discountValue = Number(DOM.discountInput.value) || 0;
   const discountType = DOM.discountTypeSelect.value;
@@ -509,7 +502,6 @@ function calculateDiscountAmount(subtotal) {
     ? (subtotal * discountValue) / 100
     : discountValue;
 
-  // Không cho phép số tiền giảm giá vượt quá tạm tính
   if (discountAmount > subtotal) {
     discountAmount = subtotal;
   }
@@ -560,7 +552,6 @@ function handleCustomerPaidInputChange() {
   updatePaymentValidation();
 }
 
-// cập nhật tỉ lệ tính tiền thừa
 function updatePaymentChange() {
   const totals = calculateOrderTotals();
   const customerPaidAmount = parseCustomerPaidAmount();
@@ -570,29 +561,21 @@ function updatePaymentChange() {
   DOM.paymentChangeDisplay.classList.toggle('is-negative', changeAmount < 0);
 }
 
+// Chỉ khóa nút "Thanh toán" khi giỏ hàng trống — không khóa theo tiền khách
+// đưa nữa, vì luồng QR cần mở modal trước khi biết khách trả bằng gì.
 function updatePaymentValidation() {
   const totals = calculateOrderTotals();
   const customerPaidAmount = parseCustomerPaidAmount();
   const isCartEmpty = AppState.cartItemList.length === 0;
 
   let errorMessage = '';
-
-  if (isCartEmpty) {
-    errorMessage = '';
-  } else if (customerPaidAmount === 0) {
-    errorMessage = '';
-  } else if (customerPaidAmount < totals.grandTotal) {
+  if (!isCartEmpty && customerPaidAmount > 0 && customerPaidAmount < totals.grandTotal) {
     errorMessage = 'Số tiền khách đưa không đủ để thanh toán đơn hàng.';
   }
-
   DOM.paymentErrorMessage.textContent = errorMessage;
   DOM.paymentErrorMessage.classList.toggle('is-visible', errorMessage.length > 0);
 
-  const isPaymentValid = !isCartEmpty
-    && totals.grandTotal > 0
-    && customerPaidAmount >= totals.grandTotal;
-
-  DOM.paymentSubmitButton.disabled = !isPaymentValid;
+  DOM.paymentSubmitButton.disabled = isCartEmpty || totals.grandTotal <= 0;
 }
 
 // ==== THANH TOÁN — GỌI API TẠO ĐƠN HÀNG THẬT ====
@@ -610,7 +593,6 @@ async function handleSubmitPayment() {
     return;
   }
 
-  // Kiểm tra lại tồn kho lần cuối (kiểm tra client, backend cũng sẽ tự kiểm tra lại)
   const outOfStockItem = AppState.cartItemList.find((cartItem) => {
     const product = AppState.productList.find((item) => item.id === cartItem.id);
     return !product || product.stock < cartItem.quantity;
@@ -621,14 +603,24 @@ async function handleSubmitPayment() {
     return;
   }
 
+  // GHI CHÚ QUAN TRỌNG:
+  // - customer_id vẫn để null vì OrderCreate (backend) chỉ nhận customer_id
+  //   dạng số, không có field tên khách. Muốn lưu đúng tên "Anh Nam" thay vì
+  //   "Khách lẻ", backend cần bổ sung field (vd: customer_fullname) vào
+  //   OrderCreate rồi tự tạo/tìm Customer tương ứng. Phần này KHÔNG sửa được
+  //   từ frontend — xem hướng dẫn backend bên dưới.
+  // - payment_method giờ phản ánh đúng lựa chọn CASH/QR của người dùng,
+  //   thay vì hardcode "Tiền mặt" như trước.
   const payload = {
-    customer_id: null, // Khách lẻ
-    payment_method: 'Tiền mặt',
+    customer_id: null,
+    customer_name: AppState.customerName,
+    customer_phone: AppState.customerPhone || null,
+    payment_method: AppState.selectedPaymentMethod === 'QR' ? 'Chuyển khoản QR' : 'Tiền mặt',
     items: AppState.cartItemList.map((item) => ({
       product_id: item.id,
       quantity: item.quantity,
     })),
-    discount_type: DOM.discountTypeSelect.value, // 'percent' hoặc 'amount' — khớp sẵn với enum backend
+    discount_type: DOM.discountTypeSelect.value,
     discount_value: Number(DOM.discountInput.value) || 0,
     vat_percent: AppState.vatPercent,
   };
@@ -643,13 +635,11 @@ async function handleSubmitPayment() {
 
     const changeAmount = customerPaidAmount - createdOrder.total;
 
-    // Gắn thêm 2 field chỉ dùng để in hóa đơn (không có trong response backend)
     createdOrder.customerPaidAmount = customerPaidAmount;
     createdOrder.changeAmount = changeAmount;
 
     AppState.lastCreatedOrder = createdOrder;
 
-    // Tải lại danh sách sản phẩm để cập nhật tồn kho mới nhất từ server
     await loadProductsFromApi();
     renderProductGrid();
 
@@ -666,6 +656,9 @@ async function handleSubmitPayment() {
 
 function resetOrderAfterPayment() {
   AppState.cartItemList = [];
+  AppState.selectedPaymentMethod = 'CASH';
+  AppState.customerName = 'Khách lẻ';
+  AppState.customerPhone = '';
   DOM.discountInput.value = 0;
   DOM.customerPaidInput.value = '';
   renderCart();
@@ -686,8 +679,7 @@ function formatDateTimeVietnamese(isoDateString) {
   return `${hours}:${minutes}:${seconds} ${day}/${month}/${year}`;
 }
 
-// hiển thị hóa đơn — dùng dữ liệu thật trả về từ API (order_details chỉ có
-// product_id/quantity/price, cần tra lại tên sản phẩm từ AppState.productList)
+// hiển thị hóa đơn — dùng dữ liệu thật trả về từ API
 function showReceiptModal(order) {
   DOM.receiptCode.textContent = order.code;
   DOM.receiptDateTime.textContent = formatDateTimeVietnamese(order.created_at);
@@ -715,6 +707,14 @@ function showReceiptModal(order) {
   DOM.receiptPaid.textContent = formatCurrencyVND(order.customerPaidAmount);
   DOM.receiptChange.textContent = formatCurrencyVND(order.changeAmount);
 
+  // Chỉ hiện QR trên hóa đơn (và khi in) nếu khách chọn thanh toán QR
+  if (AppState.selectedPaymentMethod === 'QR' && DOM.receiptQrSection && DOM.receiptQrImage) {
+    DOM.receiptQrImage.src = generateVietQR(order.total, order.code);
+    DOM.receiptQrSection.classList.add('is-visible');
+  } else if (DOM.receiptQrSection) {
+    DOM.receiptQrSection.classList.remove('is-visible');
+  }
+
   DOM.receiptModalOverlay.classList.add('is-open');
 }
 
@@ -727,7 +727,6 @@ function handleStartNewOrder() {
   DOM.productSearchInput.focus();
 }
 
-// in hóa đơn
 function handlePrintReceipt() {
   window.print();
 }
@@ -775,7 +774,6 @@ function registerAllEventListeners() {
 
   DOM.searchClearButton.addEventListener('click', handleClearSearchInput);
 
-  // Đóng dropdown khi click ra ngoài vùng tìm kiếm
   document.addEventListener('click', (event) => {
     const isClickInsideSearch = event.target.closest('.search-box-wrapper');
     if (!isClickInsideSearch) {
@@ -786,7 +784,6 @@ function registerAllEventListeners() {
   // giỏ hàng và tính tiền
   DOM.cartClearButton.addEventListener('click', clearCart);
   DOM.discountInput.addEventListener('input', () => {
-    // Không cho phép nhập số âm
     if (Number(DOM.discountInput.value) < 0) {
       DOM.discountInput.value = 0;
     }
@@ -799,11 +796,13 @@ function registerAllEventListeners() {
     updatePaymentValidation();
   });
 
-  // thanh toán
+  // thanh toán — bấm nút chỉ MỞ MODAL chọn CASH/QR, chưa gọi API ngay
   DOM.customerPaidInput.addEventListener('input', handleCustomerPaidInputChange);
-  DOM.paymentSubmitButton.addEventListener('click', handleSubmitPayment);
+  DOM.paymentSubmitButton.addEventListener('click', () => {
+    document.getElementById('paymentModal').style.display = 'flex';
+  });
   DOM.receiptCloseButton.addEventListener('click', closeReceiptModal);
-  // hóa đơn
+
   DOM.receiptNewOrderButton.addEventListener('click', handleStartNewOrder);
   DOM.receiptPrintButton.addEventListener('click', handlePrintReceipt);
 
@@ -838,3 +837,69 @@ async function initializeApplication() {
   registerAllEventListeners();
 }
 document.addEventListener('DOMContentLoaded', initializeApplication);
+
+
+// ==== QR THANH TOÁN ====
+function generateVietQR(totalAmount, orderCode) {
+
+    const BANK_ID = "970446";
+    const ACCOUNT_NO = "3300300975136618";
+    const ACCOUNT_NAME = "NGUYEN THI HANH";
+
+    const addInfo = encodeURIComponent(`BearCharged ${orderCode}`);
+
+    const qrUrl =
+        `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png` +
+        `?amount=${totalAmount}` +
+        `&addInfo=${addInfo}` +
+        `&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
+
+    return qrUrl;
+}
+
+// Modal chọn CASH/QR — đổi phương thức thì hiện/ẩn QR preview
+function togglePaymentMethod() {
+  const method = document.getElementById('paymentMethod').value;
+  const qrContainer = document.getElementById('qrContainer');
+
+  if (method === 'QR') {
+    qrContainer.style.display = 'block';
+    const totals = calculateOrderTotals();
+    const tempCode = 'DH' + Math.floor(1000 + Math.random() * 9000);
+    document.getElementById('qrImage').src = generateVietQR(totals.grandTotal, tempCode);
+    document.getElementById('qrAmountText').innerText = 'Số tiền: ' + formatCurrencyVND(totals.grandTotal);
+  } else {
+    qrContainer.style.display = 'none';
+  }
+}
+
+function closePaymentModal() {
+  document.getElementById('paymentModal').style.display = 'none';
+}
+
+// Xác nhận trong modal thanh toán → đọc tên khách + phương thức, rồi mới
+// gọi API tạo đơn thật qua handleSubmitPayment()
+async function submitOrderFinal() {
+  const method = document.getElementById('paymentMethod').value;
+  const totals = calculateOrderTotals();
+  const customerName = document.getElementById('modalCustomerName').value.trim() || 'Khách lẻ';
+  const customerPhone = document.getElementById('modalCustomerPhone').value.trim();
+
+  AppState.selectedPaymentMethod = method;
+  AppState.customerName = customerName;
+  AppState.customerPhone = customerPhone; 
+
+  if (method === 'CASH') {
+    const paid = parseCustomerPaidAmount();
+    if (paid < totals.grandTotal) {
+      showToast('Vui lòng nhập đủ số tiền khách đưa (tiền mặt) trước khi xác nhận.', 'error');
+      return;
+    }
+  } else {
+    // QR: khách chuyển khoản đúng tổng tiền, tự điền vào ô để handleSubmitPayment không chặn
+    DOM.customerPaidInput.value = totals.grandTotal.toLocaleString('vi-VN');
+  }
+
+  await handleSubmitPayment();
+  closePaymentModal();
+}

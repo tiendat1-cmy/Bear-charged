@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khách hàng - Bear Dashboard</title>
+    <link rel="stylesheet" href="../css/dashboard.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
+</head>
+<body>
+    <div class="container">
+    <aside class="sidebar">
+        <div class="logo">
+            <i class="fa-solid fa-store"></i>
+            <h2>Bear pos</h2>
+        </div>
+        <ul>
+            <li>
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="order.html">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    Đơn hàng
+                </a>
+            </li>
+            <li>
+                <a href="post.html">
+                    <i class="fa-solid fa-box"></i>
+                    Sản phẩm
+                </a>
+            </li>
+            <li class="active">
+                <a href="customers.html">
+                    <i class="fa-solid fa-users"></i>
+                    Khách hàng
+                </a>
+            </li>
+            <li>
+                <a href="settings.html">
+                    <i class="fa-solid fa-gear"></i>
+                    Cài đặt
+                </a>
+            </li>
+        </ul>
+        <button id="logoutBtn">
+            <i class="fa-solid fa-right-from-bracket"></i>
+                Đăng xuất
+        </button>
+    </aside>
+
+    <main class="main">
+        <header class="navbar">
+            <div class="search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Tìm kiếm...">
+            </div>
+            <div class="right">
+                <div class="profile">
+                    <img src="../img/avatar-facebook-mac-dinh-2.jpg" alt="Avatar">
+                    <div class="info">
+                        <h4>Admin</h4>
+                        <small>Quản trị viên</small>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="recent">
+            <div class="title"><h3>Danh sách khách hàng</h3></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Khách hàng</th>
+                        <th>Số đơn đã thanh toán</th>
+                        <th>Tổng chi tiêu</th>
+                    </tr>
+                </thead>
+                <tbody id="customerTable"></tbody>
+            </table>
+        </section>
+
+        <section class="day-detail" id="customerOrders" style="display:none">
+            <div class="title"><h3 id="customerOrdersTitle"></h3></div>
+            <table>
+                <thead>
+                    <tr><th>Mã</th><th>Ngày</th><th>Đã mua</th><th>Tổng tiền</th><th>Trạng thái</th></tr>
+                </thead>
+                <tbody id="customerOrdersBody"></tbody>
+            </table>
+        </section>
+    </main>
+    </div>
+    <script src="../js/customers.js"></script>
+</body>
+</html>

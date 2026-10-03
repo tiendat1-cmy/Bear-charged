@@ -345,6 +345,20 @@ td{
     background:#4f46e5;
     border-radius:20px;
 }
+.day-detail{
+    background:#fff;
+    border-radius:18px;
+    padding:25px;
+    margin-top:25px;
+    box-shadow:0 10px 30px rgba(0,0,0,.06);
+}
+.day-detail .title p{
+    color:#777;
+    font-size:14px;
+    margin-top:6px;
+}
+.noti-danger i{ color:#dc2626; }
+
 
 
 @media(max-width:1200px){

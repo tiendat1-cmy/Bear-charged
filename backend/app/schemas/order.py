@@ -23,6 +23,7 @@ class OrderItemCreate(BaseModel):
 
 class OrderCreate(BaseModel):
     customer_id: Optional[int] = None
+    customer_name: Optional[str] = None # thêm tên khách hàng
     payment_method: Optional[str] = Field(None, max_length=50)
     items: List[OrderItemCreate] = Field(..., min_length=1)
 
@@ -55,6 +56,15 @@ class OrderOut(BaseModel):
     status: OrderStatusEnum
     created_at: datetime
     order_details: List[OrderDetailOut] = []
+   
 
     class Config:
         from_attributes = True
+
+
+
+
+class OrderCreateSchema(BaseModel):
+    customer_name: Optional[str] = "Khách lẻ"  # Nếu không nhập tự động nhận là Khách lẻ
+    payment_method: str = "CASH"              # "CASH" hoặc "QR"
+    items: list                               # Danh sách sản phẩm mua

@@ -5,6 +5,8 @@ const API_BASE_URL = "https://bear-charged.onrender.com";
 const OVERVIEW_URL = `${API_BASE_URL}/api/dashboard/overview`;
 const NOTIFICATIONS_URL = `${API_BASE_URL}/api/dashboard/notifications`;
 const RECENT_ORDERS_URL = `${API_BASE_URL}/api/orders/recent?limit=5`;
+const REVENUE_DAY_URL = `${API_BASE_URL}/api/dashboard/revenue-by-day`;
+let last7Days = [];
 
 // kiểm tra đăng nhập
 const token = localStorage.getItem("token");
@@ -68,6 +70,14 @@ const salesChart = new Chart(ctx, {
     options: {
         responsive: true,
         maintainAspectRatio: false,
+        onClick: (evt, elements) => {
+        if (!elements.length) return;
+        const day = last7Days[elements[0].index];
+        if (day && day.date) loadDayDetail(day.date, day.label);
+        },
+        onHover: (evt, elements) => {
+        evt.native.target.style.cursor = elements.length ? "pointer" : "default";
+        },
         animation: {
             duration: 800
         },
@@ -93,6 +103,7 @@ async function loadOverview() {
 
     // biểu đồ 7 ngày gần nhất
     const days = data.revenue_last_7_days || [];
+    last7Days = days; 
     salesChart.data.labels = days.map(d => d.label);
     salesChart.data.datasets[0].data = days.map(d => d.revenue);
     salesChart.update();
@@ -163,6 +174,37 @@ async function loadOrders() {
     });
 }
 
+async function loadDayDetail(dateStr, label) {
+    const data = await apiGet(`${REVENUE_DAY_URL}?date=${dateStr}`);
+    if (!data) return;
+
+    document.getElementById("dayDetailTitle").innerText = `Chi tiết ngày ${label}`;
+    document.getElementById("dayDetailSummary").innerText =
+        `${data.total_orders} đơn đã hoàn thành • Doanh thu ${formatCurrency(data.total_revenue)}`;
+
+    const body = document.getElementById("dayDetailBody");
+    if (!data.orders.length) {
+        body.innerHTML = `<tr><td colspan="5">Ngày này chưa có đơn hàng</td></tr>`;
+    } else {
+        body.innerHTML = data.orders.map(o => {
+            const { text, color } = mapOrderStatus(o.status);
+            const items = o.items.map(i => `${escapeHtml(i.name)} x${i.quantity}`).join(", ");
+            return `
+                <tr>
+                    <td>${escapeHtml(o.code)}</td>
+                    <td>${escapeHtml(o.customer_fullname || "Khách lẻ")}</td>
+                    <td>${items}</td>
+                    <td>${formatCurrency(o.total)}</td>
+                    <td class="${color}">${escapeHtml(text)}</td>
+                </tr>`;
+        }).join("");
+    }
+
+    const panel = document.getElementById("dayDetail");
+    panel.style.display = "block";
+    panel.scrollIntoView({ behavior: "smooth" });
+}
+
 async function refreshDashboard() {
     await loadOverview();
     await loadNotifications();
@@ -223,6 +265,13 @@ if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
         localStorage.removeItem("token");
         window.location.href = "login.html";
+    });
+}
+const totalOrdersCard = document.getElementById("totalOrders")?.closest(".card");
+if (totalOrdersCard) {
+    totalOrdersCard.style.cursor = "pointer";
+    totalOrdersCard.addEventListener("click", () => {
+        window.location.href = "order.html";
     });
 }
 

@@ -17,4 +17,4 @@ class Product(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     category = relationship("Category", back_populates="products")
-    order_details = relationship("OrderDetail", back_populates="product")
+    order_details = relationship("OrderDetail",back_populates="product",cascade="all, delete-orphan",passive_deletes=True,)
