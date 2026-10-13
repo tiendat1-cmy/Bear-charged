@@ -1,5 +1,5 @@
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError
 from sqlalchemy.orm import Session
 
@@ -10,14 +10,17 @@ from app.utils.exceptions import AppException
 from app.utils.security import decode_access_token
 
 # tokenUrl chỉ dùng để hiển thị nút "Authorize" trên Swagger UI
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+bearer_scheme = HTTPBearer()
+
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> User:
-    """Giải mã JWT, lấy user tương ứng. Raise 401 nếu token/user không hợp lệ."""
+    """Giải mã Bearer JWT, lấy user tương ứng."""
+    token = credentials.credentials
+
     try:
         payload = decode_access_token(token)
     except JWTError:
@@ -32,6 +35,7 @@ def get_current_user(
         raise AppException(401, "Người dùng không tồn tại")
 
     return user
+
 
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
