@@ -113,6 +113,7 @@
                 <thead>
                 <tr>
                     <th>ID</th>
+                    <th>Mã vạch</th>
                     <th>Tên</th>
                     <th>Danh mục</th>
                     <th>Giá</th>
@@ -148,8 +149,13 @@
             <input type="hidden" id="productId">
 
             <div class="form-group">
+                <label for="productBarcode">Mã vạch (Barcode)</label>
+                <input type="text" id="productBarcode" placeholder="Quét bằng máy ZEBEX hoặc nhập mã (VD: 8938505974015)">
+            </div>
+
+            <div class="form-group">
                 <label for="productName">Tên sản phẩm</label>
-                <input type="text" id="productName" >
+                <input type="text" id="productName" required>
             </div>
 
             <div class="form-group">

@@ -28,6 +28,12 @@ def search_products(
     return success_response("OK", data)
 
 
+@router.get("/barcode/{barcode}", dependencies=[Depends(get_current_user)])
+def get_product_by_barcode(barcode: str, db: Session = Depends(get_db)):
+    product = product_service.get_product_by_barcode(db, barcode)
+    return success_response("OK", ProductOut.model_validate(product).model_dump())
+
+
 @router.get("/{product_id}", dependencies=[Depends(get_current_user)])
 def get_product(product_id: int, db: Session = Depends(get_db)):
     product = product_service.get_product(db, product_id)

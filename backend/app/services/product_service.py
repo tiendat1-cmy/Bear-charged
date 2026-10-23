@@ -36,6 +36,16 @@ def get_product(db: Session, product_id: int) -> Product:
     return product
 
 
+def get_product_by_barcode(db: Session, barcode: str) -> Product:
+    barcode_clean = barcode.strip() if barcode else ""
+    if not barcode_clean:
+        raise AppException(400, "Mã vạch không hợp lệ")
+    product = product_repository.get_by_barcode(db, barcode_clean)
+    if not product:
+        raise AppException(404, f"Không tìm thấy sản phẩm với mã vạch: {barcode_clean}")
+    return product
+
+
 def create_product(db: Session, payload: ProductCreate) -> Product:
     if payload.barcode and product_repository.get_by_barcode(db, payload.barcode):
         raise AppException(400, "Barcode đã tồn tại")

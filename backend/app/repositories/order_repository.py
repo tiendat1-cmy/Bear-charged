@@ -12,7 +12,10 @@ from app.models.customer import Customer
 def get_by_id(db: Session, order_id: int) -> Optional[Order]:
     return (
         db.query(Order)
-        .options(joinedload(Order.order_details), joinedload(Order.customer))
+        .options(
+            joinedload(Order.order_details).joinedload(OrderDetail.product),
+            joinedload(Order.customer),
+        )
         .filter(Order.id == order_id)
         .first()
     )
@@ -20,7 +23,8 @@ def get_by_id(db: Session, order_id: int) -> Optional[Order]:
 
 def get_all(db: Session, page: int, page_size: int) -> Tuple[List[Order], int]:
     query = db.query(Order).options(
-        joinedload(Order.order_details), joinedload(Order.customer)
+        joinedload(Order.order_details).joinedload(OrderDetail.product),
+        joinedload(Order.customer),
     )
     total_items = query.count()
     items = (
@@ -36,7 +40,10 @@ def get_recent(db: Session, limit: int = 5) -> List[Order]:
     """Lấy N đơn hàng gần nhất, kèm sẵn Customer -> dùng cho Dashboard."""
     return (
         db.query(Order)
-        .options(joinedload(Order.order_details), joinedload(Order.customer))
+        .options(
+            joinedload(Order.order_details).joinedload(OrderDetail.product),
+            joinedload(Order.customer),
+        )
         .order_by(Order.created_at.desc())
         .limit(limit)
         .all()

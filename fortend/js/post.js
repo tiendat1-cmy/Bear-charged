@@ -37,6 +37,7 @@ const productNameInput = document.getElementById("productName");
 const productCategoryInput = document.getElementById("productCategory"); // giờ là <select>
 const productPriceInput = document.getElementById("productPrice");
 const productStockInput = document.getElementById("productStock");
+const productBarcodeInput = document.getElementById("productBarcode");
 const formError = document.getElementById("formError");
 
 const addBtn = document.getElementById("addBtn");
@@ -160,7 +161,7 @@ function renderTable() {
     if (products.length === 0) {
         tableBody.innerHTML = `
             <tr class="empty-row">
-                <td colspan="7">Không tìm thấy sản phẩm nào</td>
+                <td colspan="8">Không tìm thấy sản phẩm nào</td>
             </tr>`;
         return;
     }
@@ -168,16 +169,20 @@ function renderTable() {
     products.forEach(product => {
         const status = getStatus(product.quantity);
         const row = document.createElement("tr");
+        const barcodeHtml = product.barcode
+            ? `<code style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-weight:600; color:#0f172a;">${escapeHtml(product.barcode)}</code>`
+            : `<span style="color:#94a3b8;">-</span>`;
         row.innerHTML = `
             <td>${product.id}</td>
+            <td>${barcodeHtml}</td>
             <td>${escapeHtml(product.name)}</td>
             <td>${escapeHtml(getCategoryName(product))}</td>
             <td>${formatCurrency(product.price)}</td>
             <td>${product.quantity}</td>
             <td><span class="status ${status.class}">${status.text}</span></td>
             <td>
-                <button class="edit" data-id="${product.id}"><i class="fa-solid fa-pen"></i></button>
-                <button class="delete" data-id="${product.id}"><i class="fa-solid fa-trash"></i></button>
+                <button class="edit" data-id="${product.id}" title="Sửa"><i class="fa-solid fa-pen"></i></button>
+                <button class="delete" data-id="${product.id}" title="Xóa"><i class="fa-solid fa-trash"></i></button>
             </td>
         `;
         tableBody.appendChild(row);
@@ -236,9 +241,14 @@ function openAddModal() {
     modalTitle.textContent = "Thêm sản phẩm";
     productForm.reset();
     productIdInput.value = "";
+    if (productBarcodeInput) productBarcodeInput.value = "";
     formError.textContent = "";
     modalOverlay.classList.add("open");
-    productNameInput.focus();
+    if (productBarcodeInput) {
+        productBarcodeInput.focus();
+    } else {
+        productNameInput.focus();
+    }
 }
 
 function openEditModal(id) {
@@ -248,6 +258,7 @@ function openEditModal(id) {
     editingId = product.id;
     modalTitle.textContent = "Sửa sản phẩm";
     productIdInput.value = product.id;
+    if (productBarcodeInput) productBarcodeInput.value = product.barcode || "";
     productNameInput.value = product.name;
     productCategoryInput.value = product.category_id || "";
     productPriceInput.value = product.price;
@@ -289,8 +300,10 @@ productForm.addEventListener("submit", async (e) => {
         return;
     }
 
+    const barcode = productBarcodeInput ? productBarcodeInput.value.trim() : "";
     const payload = {
         name,
+        barcode: barcode || null,
         category_id: categoryId,
         price,
         quantity,

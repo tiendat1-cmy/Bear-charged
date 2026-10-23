@@ -36,6 +36,8 @@ class OrderCreate(BaseModel):
 class OrderDetailOut(BaseModel):
     id: int
     product_id: int
+    product_name: Optional[str] = None
+    product_barcode: Optional[str] = None
     quantity: int
     price: float
 

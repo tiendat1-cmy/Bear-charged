@@ -1337,28 +1337,268 @@ a {
    Khi in: chỉ hiện hóa đơn, ẩn Sidebar, Header và các phần khác
 ================================================================== */
 
+/* ==================================================================
+   14. HARDWARE STATUS & BARCODE SCANNER
+================================================================== */
+
+.pos-hardware-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.hw-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.hw-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.hw-badge-ok {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.hw-badge-neutral {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.hw-badge-err {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.hw-reprint-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #3b82f6;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hw-reprint-btn:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* Barcode Scanner Card */
+.barcode-scanner-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: var(--gap-md);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  border: 1px solid #334155;
+  transition: all 0.2s ease;
+}
+
+.barcode-scanner-card:focus-within {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+}
+
+.barcode-scanner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.barcode-scanner-title {
+  color: #f8fafc;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.barcode-scanner-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+.barcode-scanner-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.barcode-scanner-input {
+  width: 100%;
+  background: #020617;
+  border: 1px solid #475569;
+  color: #f8fafc;
+  font-family: 'Roboto', 'Courier New', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 10px 40px 10px 14px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.barcode-scanner-input:focus {
+  border-color: #38bdf8;
+  background: #090d16;
+}
+
+.barcode-scanner-input::placeholder {
+  color: #64748b;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.barcode-clear-btn {
+  position: absolute;
+  right: 10px;
+  background: #334155;
+  color: #cbd5e1;
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.barcode-clear-btn:hover {
+  background: #475569;
+  color: #fff;
+}
+
+.barcode-scanner-footer {
+  margin-top: 8px;
+}
+
+.barcode-hint-text {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.barcode-hint-text strong {
+  color: #38bdf8;
+}
+
+.receipt-print-status-banner {
+  padding: 10px 14px;
+  margin: 10px 0 0;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.receipt-print-status-banner.is-success {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.receipt-print-status-banner.is-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.modal-action-button {
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  transition: all 0.2s ease;
+}
+
+.modal-action-button:hover {
+  background: #f1f5f9;
+}
+
+.modal-reprint-button {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.modal-reprint-button:hover {
+  background: #dcfce7;
+}
+
+/* ==================================================================
+   15. TỐI ƯU HÓA IN HÓA ĐƠN NHIỆT (@media print)
+================================================================== */
+@page {
+  size: 80mm auto;
+  margin: 0;
+}
+
 @media print {
+  html, body {
+    width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
   body * {
-    visibility: hidden;
-  }
-
-  .modal-overlay {
-    position: static !important;
-    background: none !important;
-    display: block !important;
-  }
-
-  .receipt-print-area,
-  .receipt-print-area * {
-    visibility: visible;
-  }
-
-  .receipt-print-area {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    padding: 0;
+    visibility: hidden !important;
   }
 
   .no-print,
@@ -1367,14 +1607,116 @@ a {
   .order-layout,
   .toast-container,
   .modal-box-header,
-  .modal-box-footer {
+  .modal-box-footer,
+  .receipt-print-status-banner {
     display: none !important;
   }
 
+  .modal-overlay {
+    position: static !important;
+    background: none !important;
+    display: block !important;
+    padding: 0 !important;
+  }
+
   .modal-box {
-    box-shadow: none;
-    max-width: 100%;
-    max-height: none;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .receipt-print-area,
+  .receipt-print-area * {
+    visibility: visible !important;
+  }
+
+  .receipt-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 76mm !important;
+    margin: 0 auto !important;
+    padding: 4mm 2mm !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  .receipt-shop-header h3 {
+    font-size: 18px !important;
+    font-weight: 900 !important;
+    text-align: center !important;
+    margin-bottom: 2px !important;
+  }
+
+  .receipt-shop-header p {
+    font-size: 11px !important;
+    text-align: center !important;
+    margin: 1px 0 !important;
+  }
+
+  .receipt-divider {
+    border-top: 1px dashed #000 !important;
+    margin: 6px 0 !important;
+  }
+
+  .receipt-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 11px !important;
+  }
+
+  .receipt-table th,
+  .receipt-table td {
+    padding: 3px 1px !important;
+    color: #000 !important;
+  }
+
+  .receipt-table th {
+    border-bottom: 1px solid #000 !important;
+    text-align: left !important;
+  }
+
+  .receipt-table th:last-child,
+  .receipt-table td:last-child {
+    text-align: right !important;
+  }
+
+  .receipt-totals-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    font-size: 11px !important;
+    padding: 2px 0 !important;
+  }
+
+  .receipt-totals-row--bold {
+    font-size: 14px !important;
+    font-weight: 900 !important;
+    border-top: 1px solid #000 !important;
+    border-bottom: 1px solid #000 !important;
+    padding: 4px 0 !important;
+    margin: 4px 0 !important;
+  }
+
+  .receipt-thank-you {
+    text-align: center !important;
+    font-size: 11px !important;
+    margin-top: 8px !important;
+  }
+
+  .receipt-qr-section {
+    text-align: center !important;
+  }
+
+  .receipt-qr-section img {
+    width: 120px !important;
+    height: 120px !important;
+    margin: 0 auto !important;
   }
 }
 

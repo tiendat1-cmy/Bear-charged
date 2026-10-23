@@ -1,5 +1,6 @@
 from typing import List, Optional, Tuple
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.product import Product
@@ -10,7 +11,9 @@ def get_by_id(db: Session, product_id: int) -> Optional[Product]:
 
 
 def get_by_barcode(db: Session, barcode: str) -> Optional[Product]:
-    return db.query(Product).filter(Product.barcode == barcode).first()
+    if not barcode:
+        return None
+    return db.query(Product).filter(Product.barcode == barcode.strip()).first()
 
 
 def search(
@@ -24,7 +27,14 @@ def search(
     query = db.query(Product)
 
     if keyword:
-        query = query.filter(Product.name.ilike(f"%{keyword}%"))
+        kw = keyword.strip()
+        query = query.filter(
+            or_(
+                Product.name.ilike(f"%{kw}%"),
+                Product.barcode == kw,
+                Product.barcode.ilike(f"%{kw}%"),
+            )
+        )
 
     if category_id:
         query = query.filter(Product.category_id == category_id)

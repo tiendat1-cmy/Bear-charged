@@ -19,14 +19,22 @@ def _calculate_discount(subtotal: float, discount_type: DiscountTypeEnum, discou
 
 def attach_display_fields(order: Order) -> Order:
     """
-    Gắn thêm 2 field CHỈ ĐỂ HIỂN THỊ (không lưu DB) vào object Order:
+    Gắn thêm field CHỈ ĐỂ HIỂN THỊ (không lưu DB) vào object Order:
     - code: mã hóa đơn dạng "HD00001", sinh trực tiếp từ id.
     - customer_fullname: tên khách hàng lấy qua quan hệ Customer, None nếu khách lẻ.
+    - product_name & product_barcode: phục vụ in hóa đơn và xem lại chi tiết đơn.
     SQLAlchemy object cho phép gán thuộc tính động, Pydantic model_validate
-    (from_attributes=True) sẽ đọc được 2 field này bình thường.
+    (from_attributes=True) sẽ đọc được các field này bình thường.
     """
     order.code = f"HD{str(order.id).zfill(5)}"
     order.customer_fullname = order.customer.fullname if order.customer else None
+    for detail in order.order_details or []:
+        if detail.product:
+            detail.product_name = detail.product.name
+            detail.product_barcode = detail.product.barcode
+        else:
+            detail.product_name = f"Sản phẩm #{detail.product_id}"
+            detail.product_barcode = None
     return order
 
 

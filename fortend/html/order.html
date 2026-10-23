@@ -72,7 +72,17 @@
         <header class="topbar" id="topbarElement">
           <div class="topbar-title">
             <h1>Màn hình bán hàng</h1>
-            <p>Tìm kiếm sản phẩm và tạo đơn hàng mới</p>
+            <div class="pos-hardware-status">
+              <span class="hw-item hw-scanner" title="Máy quét ZEBEX Z-3100 CCD (USB HID)">
+                <i class="fa-solid fa-barcode"></i> Máy quét: <strong class="hw-badge hw-badge-ok">ZEBEX (HID)</strong>
+              </span>
+              <span class="hw-item hw-printer" id="printerStatusContainer" title="Máy in nhiệt POS">
+                <i class="fa-solid fa-print"></i> Máy in: <strong class="hw-badge hw-badge-neutral" id="printerStatusBadge">Đang kiểm tra...</strong>
+              </span>
+              <button type="button" class="hw-reprint-btn" id="quickReprintBtn" title="In lại hóa đơn vừa thanh toán">
+                <i class="fa-solid fa-rotate-right"></i> In lại đơn vừa tạo
+              </button>
+            </div>
           </div>
 
           <div class="topbar-stats">
@@ -92,6 +102,41 @@
         </header>
         <main class="order-layout">
           <section class="panel panel-search">
+            <!-- KHỐI QUÉT MÃ VẠCH ZEBEX CCD CHUYÊN DỤNG -->
+            <div class="barcode-scanner-card" id="barcodeScannerCard">
+              <div class="barcode-scanner-header">
+                <span class="barcode-scanner-title">
+                  <i class="fa-solid fa-barcode"></i> QUÉT MÃ VẠCH (ZEBEX CCD)
+                </span>
+                <span class="barcode-scanner-pill" id="scannerFocusPill">
+                  <span class="pulse-dot"></span> Đang nhận mã (F2)
+                </span>
+              </div>
+              <div class="barcode-scanner-input-wrap">
+                <input
+                  type="text"
+                  id="barcodeScannerInput"
+                  class="barcode-scanner-input"
+                  placeholder="Đưa mã vạch trước máy quét ZEBEX hoặc nhập mã + Enter..."
+                  autocomplete="off"
+                  autofocus
+                />
+                <button
+                  type="button"
+                  class="barcode-clear-btn"
+                  id="barcodeClearButton"
+                  title="Xóa mã"
+                >
+                  ✕
+                </button>
+              </div>
+              <div class="barcode-scanner-footer">
+                <span class="barcode-hint-text">
+                  ⚡ Quét liên tục để tăng số lượng. Nhấn <strong>F2</strong> để đưa con trỏ về ô quét bất kỳ lúc nào.
+                </span>
+              </div>
+            </div>
+
             <div class="search-box-wrapper">
               <div class="search-box">
                 <span class="search-box-icon">🔍</span>
@@ -99,7 +144,7 @@
                   type="text"
                   id="productSearchInput"
                   class="search-box-input"
-                  placeholder="Tìm sản phẩm..."
+                  placeholder="Tìm sản phẩm theo tên..."
                   autocomplete="off"
                 />
                 <button
@@ -293,20 +338,41 @@
           <p class="receipt-thank-you">Cảm ơn quý khách và hẹn gặp lại!</p>
         </div>
 
+        <div class="receipt-print-status-banner no-print" id="receiptPrintStatusBanner" style="display: none;">
+          <i class="fa-solid fa-circle-info"></i> <span id="receiptPrintStatusText"></span>
+        </div>
+
         <div class="modal-box-footer no-print">
           <button
             type="button"
             class="modal-secondary-button"
             id="receiptNewOrderButton"
           >
-            Đơn hàng mới
+            Đơn mới
+          </button>
+          <button
+            type="button"
+            class="modal-action-button"
+            id="receiptPrintButton"
+            title="In qua hộp thoại in của trình duyệt (hỗ trợ mọi máy in)"
+          >
+            🖨️ In trình duyệt
           </button>
           <button
             type="button"
             class="modal-primary-button"
-            id="receiptPrintButton"
+            id="receiptAgentPrintButton"
+            title="Gửi trực tiếp tới máy in nhiệt qua Print Agent cục bộ (Cắt giấy tự động)"
           >
-            🖨️ In hóa đơn
+            ⚡ In nhiệt (ESC/POS)
+          </button>
+          <button
+            type="button"
+            class="modal-action-button modal-reprint-button"
+            id="receiptReprintButton"
+            title="In lại một bản sao của hóa đơn này"
+          >
+            🔄 In lại
           </button>
         </div>
       </div>

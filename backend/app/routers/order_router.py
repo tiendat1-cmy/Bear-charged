@@ -38,6 +38,23 @@ def get_order(order_id: int, db: Session = Depends(get_db)):
     return success_response("OK", OrderOut.model_validate(order).model_dump())
 
 
+@router.get("/{order_id}/print-data", dependencies=[Depends(get_current_user)])
+def get_order_print_data(order_id: int, db: Session = Depends(get_db)):
+    order = order_service.get_order(db, order_id)
+    order_data = OrderOut.model_validate(order).model_dump()
+    print_payload = {
+        "shop": {
+            "name": "BEAR POS",
+            "branch": "Cửa hàng tiện lợi Gấu Con",
+            "address": "123 Đường ABC, Quận XYZ, TP. Hà Nội",
+            "hotline": "1900 1234",
+        },
+        "order": order_data,
+        "is_reprint": True,
+    }
+    return success_response("OK", print_payload)
+
+
 @router.post("", dependencies=[Depends(get_current_user)])
 def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
     order = order_service.create_order(db, payload)
