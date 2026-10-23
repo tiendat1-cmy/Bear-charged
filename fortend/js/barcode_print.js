@@ -657,7 +657,7 @@ function createLabelElement(product, isTestMode = false, isBlankSlot = false) {
         barcodeWrap.className = 'label-barcode-wrapper';
 
         const svgEl = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svgEl.className = 'label-barcode-svg';
+        svgEl.setAttribute('class', 'label-barcode-svg'); // SVG dùng setAttribute thay vì .className
 
         const rawCode = product.barcode ? String(product.barcode).trim() : '';
         if (rawCode) {
