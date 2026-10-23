@@ -15,6 +15,11 @@ if (!token) {
     window.location.href = "login.html";
 }
 
+// Kiểm tra thư viện JsBarcode đã tải chưa
+if (typeof JsBarcode === 'undefined') {
+    console.error('JsBarcode chưa được tải! Vui lòng kiểm tra kết nối mạng hoặc file thư viện cục bộ.');
+}
+
 // 2. Danh mục kích thước chuẩn các mẫu giấy Decal Phong Châu / Tomy A4
 const DECAL_PRESETS = {
     pc_108: {
@@ -278,6 +283,7 @@ function showToast(message, type = 'success') {
 }
 
 // 6. Tải danh sách sản phẩm từ backend
+// Trả về true nếu cần tự động mở hộp thoại in (truy cập từ biểu tượng in ở trang sản phẩm)
 async function loadProducts() {
     try {
         DOM.productTableBody.innerHTML = `
@@ -308,17 +314,35 @@ async function loadProducts() {
         // Kiểm tra URL params nếu có ?id=... để tự động chọn sản phẩm đó
         const urlParams = new URLSearchParams(window.location.search);
         const preSelectId = urlParams.get('id') || urlParams.get('productId');
+        let shouldAutoPrint = false;
+
         if (preSelectId) {
             const targetProd = State.allProducts.find(p => String(p.id) === String(preSelectId));
             if (targetProd) {
                 State.selectedProductIds.add(targetProd.id);
                 State.printQuantities[targetProd.id] = 1;
+
+                // Kiểm tra mã vạch hợp lệ trước khi cho phép auto-print
+                if (!targetProd.barcode) {
+                    showToast(`Sản phẩm "${targetProd.name}" chưa có mã vạch. Vui lòng cấp mã trước khi in.`, 'warning');
+                } else if (typeof JsBarcode === 'undefined') {
+                    showToast('Thư viện mã vạch (JsBarcode) chưa tải được. Vui lòng kiểm tra kết nối mạng.', 'error');
+                } else {
+                    // Đủ điều kiện: có sản phẩm, có mã vạch, có thư viện → auto-print
+                    shouldAutoPrint = true;
+                }
+            } else {
+                showToast(`Không tìm thấy sản phẩm ID "${preSelectId}" trong hệ thống.`, 'error');
             }
         }
 
         renderProductTable();
         updateStats();
         renderPreview();
+
+        // Trả về cờ để init() biết có cần mở hộp thoại in hay không
+        return shouldAutoPrint;
+
     } catch (err) {
         console.error("Lỗi nạp sản phẩm:", err);
         DOM.productTableBody.innerHTML = `
@@ -328,6 +352,7 @@ async function loadProducts() {
                 </td>
             </tr>`;
         showToast("Không thể tải danh sách sản phẩm: " + err.message, "error");
+        return false;
     }
 }
 
@@ -1160,7 +1185,23 @@ function setupEventListeners() {
 async function init() {
     loadSavedCustomConfig();
     setupEventListeners();
-    await loadProducts();
+
+    // loadProducts() trả về true nếu cần mở hộp thoại in tự động (truy cập từ ?id=...)
+    const shouldAutoPrint = await loadProducts();
+
+    if (shouldAutoPrint) {
+        // Đảm bảo SVG mã vạch đã được render xong rồi mới mở hộp thoại
+        // Dùng setTimeout để trình duyệt có thời gian paint giao diện hoàn chỉnh
+        setTimeout(() => {
+            const ready = renderA4PrintContainer();
+            if (ready) {
+                // Chờ thêm 80ms cho SVG parse hoàn tất trước khi mở in
+                setTimeout(() => {
+                    window.print();
+                }, 80);
+            }
+        }, 200);
+    }
 }
 
 init();
