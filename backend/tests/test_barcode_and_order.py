@@ -240,6 +240,72 @@ class TestBarcodeAndOrderFlow(unittest.TestCase):
         self.assertEqual(count2, 1)
         self.assertEqual(items_by_name[0].barcode, "8934567891234")
 
+    def test_09_manual_barcode_11111(self):
+        """Test 9: Nhập thủ công mã vạch ngắn như '11111'."""
+        p = ProductCreate(
+            name="Sản phẩm thử nghiệm 11111",
+            barcode="11111",
+            price=25000,
+            quantity=15,
+            category_id=self.cat.id,
+        )
+        created = product_service.create_product(self.db, p)
+        self.assertEqual(created.barcode, "11111")
+
+        found = product_service.get_product_by_barcode(self.db, "11111")
+        self.assertIsNotNone(found)
+        self.assertEqual(found.id, created.id)
+        self.assertEqual(found.barcode, "11111")
+
+    def test_10_auto_internal_barcode_generation(self):
+        """Test 10: Tự động sinh mã vạch nội bộ chuẩn EAN-13/Code 128 (13 số, tiền tố 200)."""
+        code = product_service.suggest_barcode(self.db)
+        self.assertEqual(len(code), 13)
+        self.assertTrue(code.startswith("200"))
+        self.assertTrue(code.isdigit())
+
+        # Kiểm tra tính hợp lệ của check digit EAN-13
+        code12 = code[:12]
+        expected_check = product_service._calculate_ean13_checksum(code12)
+        self.assertEqual(code[12], expected_check)
+
+    def test_11_auto_assign_barcode_to_product(self):
+        """Test 11: Tự động cấp mã vạch cho sản phẩm chưa có mã, không ghi đè nếu đã có."""
+        p = Product(name="Trà xanh không độ", barcode=None, price=10000, quantity=20, category_id=self.cat.id)
+        self.db.add(p)
+        self.db.commit()
+
+        updated = product_service.auto_assign_barcode(self.db, p.id)
+        self.assertIsNotNone(updated.barcode)
+        self.assertEqual(len(updated.barcode), 13)
+        self.assertTrue(updated.barcode.startswith("200"))
+
+        # Thử gọi lại auto_assign_barcode khi sản phẩm ĐÃ CÓ mã -> Không được ghi đè, phải raise 400
+        with self.assertRaises(AppException) as ctx:
+            product_service.auto_assign_barcode(self.db, p.id)
+        self.assertEqual(ctx.exception.status_code, 400)
+        self.assertIn("đã có mã vạch", str(ctx.exception.message))
+
+    def test_12_bulk_barcode_generation(self):
+        """Test 12: Sinh mã vạch hàng loạt cho toàn bộ sản phẩm chưa có mã."""
+        p1 = Product(name="Bánh quy A", barcode=None, price=15000, quantity=10, category_id=self.cat.id)
+        p2 = Product(name="Bánh quy B", barcode="", price=18000, quantity=10, category_id=self.cat.id)
+        p3 = Product(name="Bánh quy C có sẵn mã", barcode="8939999999999", price=20000, quantity=10, category_id=self.cat.id)
+        self.db.add_all([p1, p2, p3])
+        self.db.commit()
+
+        result = product_service.bulk_generate_barcodes(self.db)
+        self.assertEqual(result["total_updated"], 2)
+
+        self.db.refresh(p1)
+        self.db.refresh(p2)
+        self.db.refresh(p3)
+
+        self.assertIsNotNone(p1.barcode)
+        self.assertIsNotNone(p2.barcode)
+        self.assertNotEqual(p1.barcode, p2.barcode)  # 2 mã phải khác nhau
+        self.assertEqual(p3.barcode, "8939999999999")  # Sản phẩm đã có mã không bị thay đổi!
+
 
 if __name__ == "__main__":
     unittest.main()

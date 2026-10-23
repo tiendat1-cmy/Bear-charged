@@ -181,6 +181,7 @@ function renderTable() {
             <td>${product.quantity}</td>
             <td><span class="status ${status.class}">${status.text}</span></td>
             <td>
+                <a href="barcode_print.html?id=${product.id}" class="print-label" title="In tem mã vạch" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;background:#eff6ff;color:#1d4ed8;text-decoration:none;margin-right:4px;"><i class="fa-solid fa-print"></i></a>
                 <button class="edit" data-id="${product.id}" title="Sửa"><i class="fa-solid fa-pen"></i></button>
                 <button class="delete" data-id="${product.id}" title="Xóa"><i class="fa-solid fa-trash"></i></button>
             </td>
@@ -377,6 +378,44 @@ if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
         localStorage.removeItem("token");
         window.location.href = "login.html";
+    });
+}
+
+// Tự động sinh mã vạch trong modal
+const autoBarcodeBtn = document.getElementById("autoBarcodeBtn");
+if (autoBarcodeBtn) {
+    autoBarcodeBtn.addEventListener("click", async () => {
+        try {
+            autoBarcodeBtn.disabled = true;
+            const res = await apiRequest(`${PRODUCTS_URL}/suggest-barcode`);
+            if (res && res.barcode) {
+                productBarcodeInput.value = res.barcode;
+            }
+        } catch (err) {
+            alert("Lỗi tạo mã: " + (err.message || err));
+        } finally {
+            autoBarcodeBtn.disabled = false;
+        }
+    });
+}
+
+// Cấp mã vạch hàng loạt cho sản phẩm chưa có mã
+const bulkBarcodeBtn = document.getElementById("bulkBarcodeBtn");
+if (bulkBarcodeBtn) {
+    bulkBarcodeBtn.addEventListener("click", async () => {
+        if (!confirm("Hệ thống sẽ tự động cấp mã vạch nội bộ chuẩn EAN-13/Code 128 cho toàn bộ sản phẩm hiện chưa có mã. Tiếp tục?")) {
+            return;
+        }
+        try {
+            bulkBarcodeBtn.disabled = true;
+            const res = await apiRequest(`${PRODUCTS_URL}/bulk-auto-barcodes`, { method: "POST" });
+            alert(`Thành công! Đã cấp mã cho ${res.total_updated} sản phẩm.`);
+            await loadProducts();
+        } catch (err) {
+            alert("Lỗi cấp mã hàng loạt: " + (err.message || err));
+        } finally {
+            bulkBarcodeBtn.disabled = false;
+        }
     });
 }
 

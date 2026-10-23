@@ -75,6 +75,21 @@ def count_all(db: Session) -> int:
     return db.query(Product).count()
 
 
+def get_all(db: Session) -> List[Product]:
+    """Lấy toàn bộ sản phẩm sắp xếp theo tên (dùng cho in tem và danh mục)."""
+    return db.query(Product).order_by(Product.name.asc()).all()
+
+
+def get_products_without_barcode(db: Session) -> List[Product]:
+    """Lấy danh sách các sản phẩm chưa có mã vạch (None hoặc rỗng)."""
+    return (
+        db.query(Product)
+        .filter(or_(Product.barcode.is_(None), Product.barcode == ""))
+        .order_by(Product.id.asc())
+        .all()
+    )
+
+
 def get_low_and_out_of_stock(db: Session, low_stock_threshold: int = 10) -> List[Product]:
     """Trả về sản phẩm hết hàng hoặc sắp hết hàng (quantity <= threshold), dùng cho Dashboard."""
     return (

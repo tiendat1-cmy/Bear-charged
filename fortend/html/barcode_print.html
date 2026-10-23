@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In tem mã vạch Decal A4 — Bear POS</title>
+    <!-- Phông chữ -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <!-- CSS riêng cho in tem mã vạch -->
+    <link rel="stylesheet" href="../css/barcode_print.css">
+    <!-- Thư viện JsBarcode (chạy offline cục bộ hoặc online CDN) -->
+    <script src="../js/lib/JsBarcode.all.min.js"></script>
+    <script>
+      // Fallback nếu thư viện cục bộ không tải được
+      if (typeof JsBarcode === 'undefined') {
+        document.write('<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>');
+      }
+    </script>
+</head>
+<body>
+
+<div class="container no-print" id="appContainer">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo">
+            <i class="fa-solid fa-store"></i>
+            <h2>Bear pos</h2>
+        </div>
+        <ul>
+            <li>
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="order.html">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>Đơn hàng</span>
+                </a>
+            </li>
+            <li>
+                <a href="post.html">
+                    <i class="fa-solid fa-box"></i>
+                    <span>Sản phẩm</span>
+                </a>
+            </li>
+            <li class="active">
+                <a href="barcode_print.html">
+                    <i class="fa-solid fa-barcode"></i>
+                    <span>In tem mã vạch</span>
+                </a>
+            </li>
+            <li>
+                <a href="customers.html">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Khách hàng</span>
+                </a>
+            </li>
+            <li>
+                <a href="settings.html">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Cài đặt</span>
+                </a>
+            </li>
+        </ul>
+        <button id="logoutBtn">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Đăng xuất</span>
+        </button>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Topbar -->
+        <header class="topbar">
+            <div class="topbar-title-group">
+                <h1>In tem mã vạch Decal A4</h1>
+                <span class="template-badge" id="currentTemplateBadge">
+                    <i class="fa-solid fa-tag"></i> Đang chọn: <strong>Phong Châu 108 (52 × 41 mm)</strong>
+                </span>
+            </div>
+            <div class="topbar-actions">
+                <button type="button" class="btn btn-outline" id="printGuideBtn" title="Xem hướng dẫn cài đặt máy in">
+                    <i class="fa-solid fa-circle-question"></i> Hướng dẫn in
+                </button>
+                <button type="button" class="btn btn-secondary" id="testPrintBtn" title="In khung lưới kiểm tra độ khớp với giấy decal thực tế">
+                    <i class="fa-solid fa-bullseye"></i> In thử căn chỉnh
+                </button>
+                <button type="button" class="btn btn-primary" id="startPrintBtn" title="In toàn bộ tem qua hộp thoại trình duyệt (Ctrl+P)">
+                    <i class="fa-solid fa-print"></i> IN TEM NGAY (Ctrl+P)
+                </button>
+            </div>
+        </header>
+
+        <!-- Thống kê nhanh hàng in -->
+        <section class="print-stats-bar">
+            <div class="stat-pill">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                <span>Sản phẩm đã chọn: <strong id="statSelectedProducts">0</strong></span>
+            </div>
+            <div class="stat-pill">
+                <i class="fa-solid fa-barcode"></i>
+                <span>Tổng số tem: <strong id="statTotalLabels">0</strong></span>
+            </div>
+            <div class="stat-pill stat-pill--highlight">
+                <i class="fa-regular fa-file"></i>
+                <span>Số trang A4 cần in: <strong id="statTotalPages">0</strong> trang</span>
+            </div>
+            <div class="stat-pill stat-pill--warning" id="missingBarcodeWarning" style="display: none;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="missingBarcodeText">0 sản phẩm chưa có mã</span>
+                <button type="button" class="btn-stat-action" id="bulkGenerateWarningBtn">Cấp mã tự động ngay</button>
+            </div>
+        </section>
+
+        <!-- Workspace chia 2 cột -->
+        <div class="print-workspace">
+            <!-- CỘT TRÁI: DANH SÁCH SẢN PHẨM & CHỌN SỐ LƯỢNG IN -->
+            <section class="panel panel-left">
+                <div class="panel-header">
+                    <div class="panel-header-title">
+                        <h2>1. Chọn sản phẩm & Số lượng tem</h2>
+                    </div>
+                    <div class="panel-header-search">
+                        <div class="search-input-wrap">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="productSearchInput" placeholder="Tìm theo tên sản phẩm, mã vạch, SKU...">
+                            <button type="button" class="search-clear-btn" id="searchClearBtn">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bộ lọc & Thao tác nhanh -->
+                <div class="product-filter-bar">
+                    <div class="filter-tabs">
+                        <button type="button" class="tab-btn active" data-filter="all">Tất cả (<span id="countAll">0</span>)</button>
+                        <button type="button" class="tab-btn" data-filter="selected">Đã chọn (<span id="countSelected">0</span>)</button>
+                        <button type="button" class="tab-btn" data-filter="no_barcode">Thiếu mã vạch (<span id="countNoBarcode">0</span>)</button>
+                    </div>
+
+                    <div class="batch-actions">
+                        <label class="batch-qty-label" for="batchQtyInput">Đặt SL tất cả:</label>
+                        <div class="batch-qty-group">
+                            <input type="number" id="batchQtyInput" min="1" max="1000" value="1">
+                            <button type="button" class="btn-batch" id="applyBatchQtyBtn">Áp dụng</button>
+                            <button type="button" class="btn-batch btn-batch--secondary" id="fillSheetBtn" title="Tự động tính số tem để lấp đầy 1 trang decal A4">Đầy 1 trang</button>
+                            <button type="button" class="btn-batch btn-batch--secondary" id="fillByStockBtn" title="In theo số lượng tồn kho của từng sản phẩm">Theo tồn kho</button>
+                            <button type="button" class="btn-batch btn-batch--danger" id="clearSelectionBtn" title="Bỏ chọn tất cả">Xóa chọn</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bảng danh sách sản phẩm -->
+                <div class="table-container">
+                    <table class="product-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">
+                                    <input type="checkbox" id="selectAllCheckbox" title="Chọn/Bỏ chọn tất cả">
+                                </th>
+                                <th style="width: 140px;">Mã vạch</th>
+                                <th>Tên sản phẩm</th>
+                                <th style="width: 100px; text-align: right;">Đơn giá</th>
+                                <th style="width: 70px; text-align: center;">Tồn</th>
+                                <th style="width: 140px; text-align: center;">Số tem in</th>
+                                <th style="width: 60px; text-align: center;">Xem</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productTableBody">
+                            <tr>
+                                <td colspan="7" class="loading-cell">
+                                    <i class="fa-solid fa-spinner fa-spin"></i> Đang tải danh sách sản phẩm...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- CỘT PHẢI: CẤU HÌNH GIẤY DECAL PHONG CHÂU & XEM TRƯỚC BẢN IN TRỰC QUAN -->
+            <section class="panel panel-right">
+                <div class="panel-header">
+                    <div class="panel-header-title">
+                        <h2>2. Mẫu tem Decal & Xem trước trang A4</h2>
+                    </div>
+                    <div class="panel-header-extra">
+                        <button type="button" class="btn-toggle-config" id="toggleConfigBtn">
+                            <i class="fa-solid fa-sliders"></i> Cấu hình kích thước <i class="fa-solid fa-chevron-down" id="configChevron"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Khối cấu hình mẫu tem (Mặc định mở hoặc thu gọn) -->
+                <div class="config-drawer" id="configDrawer">
+                    <div class="config-grid">
+                        <div class="config-group full-width">
+                            <label for="templatePresetSelect">
+                                <strong>Mẫu giấy tem A4 (Decal Phong Châu / Tomy):</strong>
+                            </label>
+                            <select id="templatePresetSelect" class="form-select">
+                                <option value="pc_108" selected>Phong Châu 108 (52 × 41 mm) — 3 cột × 6 hàng (18 tem/tờ) [Xác nhận bao bì]</option>
+                                <option value="pc_108_4col">Phong Châu 108 (52 × 41 mm) — 4 cột × 6 hàng (24 tem/tờ)</option>
+                                <option value="pc_108_3x7">Phong Châu 108 (52 × 41 mm) — 3 cột × 7 hàng (21 tem/tờ)</option>
+                                <option value="pc_145">Phong Châu / Tomy 145 (65 tem/tờ — 38 × 21 mm)</option>
+                                <option value="pc_138">Phong Châu / Tomy 138 (100 tem/tờ — 38 × 14 mm)</option>
+                                <option value="pc_149">Phong Châu / Tomy 149 (44 tem/tờ — 48 × 25 mm)</option>
+                                <option value="pc_135">Phong Châu / Tomy 135 (30 tem/tờ — 66 × 28 mm)</option>
+                                <option value="pc_133">Phong Châu / Tomy 133 (16 tem/tờ — 101 × 33 mm)</option>
+                                <option value="custom">-- Tùy chỉnh thông số thực tế theo thước kẻ --</option>
+                            </select>
+                        </div>
+
+                        <!-- Các thông số chi tiết -->
+                        <div class="config-group">
+                            <label for="cfgColumns">Số cột (Columns):</label>
+                            <input type="number" id="cfgColumns" min="1" max="10" value="3">
+                        </div>
+                        <div class="config-group">
+                            <label for="cfgRows">Số hàng (Rows):</label>
+                            <input type="number" id="cfgRows" min="1" max="40" value="6">
+                        </div>
+                        <div class="config-group">
+                            <label for="cfgLabelWidth">Rộng tem (mm):</label>
+                            <input type="number" id="cfgLabelWidth" step="0.1" min="10" max="210" value="52">
+                        </div>
+                        <div class="config-group">
+                            <label for="cfgLabelHeight">Cao tem (mm):</label>
+                            <input type="number" id="cfgLabelHeight" step="0.1" min="10" max="297" value="41">
+                        </div>
+                        <div class="config-group">
+                            <label for="cfgMarginTop">Lề trên (Top mm):</label>
+                            <input type="number" id="cfgMarginTop" step="0.1" min="0" max="50" value="15">
+                        </div>
+                        <div class="config-group">
+                            <label for="cfgMarginLeft">Lề trái (Left mm):</label>
+                            <input type="number" id="cfgMarginLeft" step="0.1" min="0" max="50" value="15">
+                        </div>
+                        <div class="config-group">
+                            <label for="cfgGapX">Cách ngang (Gap X mm):</label>
+                            <input type="number" id="cfgGapX" step="0.1" min="0" max="20" value="12">
+                        </div>
+                        <div class="config-group">
+                            <label for="cfgGapY">Cách dọc (Gap Y mm):</label>
+                            <input type="number" id="cfgGapY" step="0.1" min="0" max="20" value="4">
+                        </div>
+
+                        <!-- Vị trí bắt đầu in (Bỏ qua tem đã bóc) -->
+                        <div class="config-group highlight-group">
+                            <label for="cfgStartPosition" title="Nếu tờ tem đã bị bóc dùng trước N tem, nhập số thứ tự tem bắt đầu in">
+                                <strong>Vị trí bắt đầu in:</strong>
+                            </label>
+                            <div class="start-pos-wrap">
+                                <span>Bắt đầu từ ô tem số:</span>
+                                <input type="number" id="cfgStartPosition" min="1" max="100" value="1">
+                                <span class="help-tip" title="Hữu ích để tận dụng tờ decal đã dùng dở!">?</span>
+                            </div>
+                        </div>
+
+                        <!-- Hiệu chỉnh sai lệch kéo giấy của máy in (Mechanical Printer Offset) -->
+                        <div class="config-group highlight-group">
+                            <label title="Bù trừ sai lệch kéo giấy cơ học của từng dòng máy in">
+                                <strong>Bù sai lệch máy in (Offset):</strong>
+                            </label>
+                            <div class="offset-inputs">
+                                <span>X (Ngang): <input type="number" id="cfgOffsetX" step="0.5" value="0" style="width: 55px;"> mm</span>
+                                <span>Y (Dọc): <input type="number" id="cfgOffsetY" step="0.5" value="0" style="width: 55px;"> mm</span>
+                            </div>
+                        </div>
+
+                        <!-- Tùy chọn hiển thị nội dung trên con tem -->
+                        <div class="config-group full-width content-toggles">
+                            <label><strong>Nội dung in trên từng tem:</strong></label>
+                            <div class="checkbox-options">
+                                <label><input type="checkbox" id="cfgShowShopName"> Tên shop</label>
+                                <label><input type="checkbox" id="cfgShowName" checked> Tên sản phẩm</label>
+                                <label><input type="checkbox" id="cfgShowBarcode" checked> Mã vạch (Code 128)</label>
+                                <label><input type="checkbox" id="cfgShowCodeText" checked> Số mã vạch</label>
+                                <label><input type="checkbox" id="cfgShowPrice" checked> Giá bán (đ)</label>
+                                <label><input type="checkbox" id="cfgTestMode"> Chế độ in thử (Vẽ khung viền)</label>
+                            </div>
+                        </div>
+
+                        <div class="config-actions full-width">
+                            <button type="button" class="btn-sm btn-primary" id="saveCustomPresetBtn">
+                                <i class="fa-solid fa-floppy-disk"></i> Lưu cấu hình này
+                            </button>
+                            <button type="button" class="btn-sm btn-outline" id="resetPresetBtn">
+                                <i class="fa-solid fa-arrow-rotate-left"></i> Đặt lại chuẩn Phong Châu 145
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Điều khiển trang xem trước (Preview Controls) -->
+                <div class="preview-toolbar">
+                    <div class="page-switcher">
+                        <button type="button" class="page-nav-btn" id="prevPageBtn" title="Trang trước">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <span class="page-indicator">Trang <strong id="previewCurrentPage">1</strong> / <span id="previewTotalPages">1</span></span>
+                        <button type="button" class="page-nav-btn" id="nextPageBtn" title="Trang kế">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+
+                    <div class="preview-mode-switch">
+                        <label>
+                            <input type="checkbox" id="showAllPagesToggle"> Hiện tất cả trang cuộn
+                        </label>
+                    </div>
+
+                    <div class="preview-zoom-group">
+                        <span class="preview-scale-label"><i class="fa-solid fa-magnifying-glass-plus"></i> Thu phóng:</span>
+                        <select id="previewScaleSelect">
+                            <option value="fit" selected>Vừa màn hình (Fit)</option>
+                            <option value="0.75">75%</option>
+                            <option value="1.0">100% (Thực tế A4)</option>
+                            <option value="1.25">125%</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Vùng hiển thị trực quan tờ A4 (Preview Stage) -->
+                <div class="preview-viewport" id="previewViewport">
+                    <div class="a4-preview-stage" id="previewStage">
+                        <!-- Render các trang A4 bằng JS -->
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<!-- ============================================================== -->
+<!-- KHU VỰC IN CHUYÊN BIỆT CHO TRÌNH DUYỆT (DISPLAY: NONE KHI XEM, HIỆN KHI IN) -->
+<!-- ============================================================== -->
+<div id="a4PrintContainer" class="print-only">
+    <!-- Được JS sinh động các phần tử .a4-sheet với kích thước chính xác 210mm x 297mm -->
+</div>
+
+<!-- MODAL HƯỚNG DẪN CÀI ĐẶT MÁY IN A4 -->
+<div class="modal-overlay" id="guideModalOverlay">
+    <div class="modal-box modal-guide">
+        <div class="modal-header">
+            <h2><i class="fa-solid fa-print"></i> Hướng dẫn in tem chuẩn trên giấy A4 Phong Châu</h2>
+            <button type="button" class="modal-close" id="guideModalCloseBtn">✕</button>
+        </div>
+        <div class="modal-body guide-content">
+            <div class="guide-step">
+                <div class="step-num">1</div>
+                <div class="step-desc">
+                    <h3>Khổ giấy: Chọn chính xác <strong>A4</strong> (210 × 297 mm)</h3>
+                    <p>Trong hộp thoại in của trình duyệt (Chrome, Edge, Cốc Cốc), phần <strong>Paper size / Khổ giấy</strong> hãy chọn <strong>A4</strong>, không chọn Letter.</p>
+                </div>
+            </div>
+            <div class="guide-step">
+                <div class="step-num">2</div>
+                <div class="step-desc">
+                    <h3>Tỷ lệ (Scale): Chọn <strong>100% / Actual Size</strong></h3>
+                    <p class="highlight-warning">Tuyệt đối <strong>KHÔNG</strong> chọn "Fit to printable area" hay "Co giãn vừa trang"! Co giãn sẽ làm sai lệch kích thước tem của giấy Phong Châu.</p>
+                </div>
+            </div>
+            <div class="guide-step">
+                <div class="step-num">3</div>
+                <div class="step-desc">
+                    <h3>Lề (Margins): Chọn <strong>None</strong> hoặc <strong>Tối thiểu</strong></h3>
+                    <p>Không để mặc định (Default), hãy chọn <strong>None</strong> để trình duyệt không tự cộng thêm 10mm lề trắng.</p>
+                </div>
+            </div>
+            <div class="guide-step">
+                <div class="step-num">4</div>
+                <div class="step-desc">
+                    <h3>Tùy chọn khác: BỎ CHỌN <strong>Headers and Footers</strong></h3>
+                    <p>Bỏ dấu tích ở "Tiêu đề và chân trang" (để không bị in ngày giờ, tên website đè lên tem).</p>
+                </div>
+            </div>
+            <div class="guide-step">
+                <div class="step-num">5</div>
+                <div class="step-desc">
+                    <h3>Khay nạp giấy: Gạt thanh dẫn giấy vừa khít tờ decal</h3>
+                    <p>Đặt mặt tem ngửa lên theo hướng dẫn nạp giấy của máy in. Kẹp thanh gạt vừa khít mép giấy để tránh tờ decal bị kéo xiên góc.</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="guideTestPrintBtn">
+                <i class="fa-solid fa-bullseye"></i> In thử trang căn chỉnh
+            </button>
+            <button type="button" class="btn btn-primary" id="guideCloseBtn">Đã hiểu & Sẵn sàng in</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST THÔNG BÁO -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- JS Xử lý in tem -->
+<script src="../js/barcode_print.js"></script>
+</body>
+</html>

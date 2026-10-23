@@ -127,7 +127,7 @@ const AppState = {
 // tải từ api
 async function loadProductsFromApi() {
   try {
-    const data = await apiRequest(`${PRODUCTS_URL}?page=1&page_size=100`);
+    const data = await apiRequest(`${PRODUCTS_URL}?page=1&page_size=500`);
     const items = data.items || [];
     AppState.productList = items.map((p) => ({
       id: p.id,
@@ -413,9 +413,9 @@ async function handleBarcodeScan(rawBarcode) {
     AppState.isScanningLocked = false;
   }, 250);
 
-  // 1. Tìm nhanh trong danh sách sản phẩm đã nạp ở client
+  // 1. Tìm nhanh trong danh sách sản phẩm đã nạp ở client (khớp chính xác barcode dạng chuỗi)
   let product = AppState.productList.find(
-    (item) => item.barcode === barcode || String(item.id) === barcode
+    (item) => item.barcode && item.barcode.trim() === barcode
   );
 
   // 2. Nếu chưa có trong client (hoặc mới thêm trên hệ thống), gọi API tra cứu
