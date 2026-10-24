@@ -103,7 +103,9 @@ async function apiRequest(url, options = {}) {
 
   if (!res.ok) {
     const msg = result.detail || result.message || 'Có lỗi xảy ra';
-    throw new Error(msg);
+    const error = new Error(msg);
+    error.status = res.status;
+    throw error;
   }
 
   return result.data !== undefined ? result.data : result;
@@ -403,37 +405,67 @@ function playBeepSound(type = 'success') {
 }
 
 // ==== XỬ LÝ MÃ VẠCH (ZEBEX CCD SCANNER) ====
-async function handleBarcodeScan(rawBarcode) {
-  const barcode = (rawBarcode || '').trim();
-  if (!barcode) return;
 
-  if (AppState.isScanningLocked) return;
-  AppState.isScanningLocked = true;
-  setTimeout(() => {
-    AppState.isScanningLocked = false;
-  }, 250);
+// Trả về lý do không được thêm hàng (chuỗi rỗng = được phép quét).
+// Không thêm hàng khi đang thanh toán hoặc hóa đơn vừa hoàn tất còn đang hiển thị.
+function getScanBlockedReason() {
+  const paymentModal = document.getElementById('paymentModal');
+  if (AppState.isSubmittingOrder) {
+    return 'Đang xử lý thanh toán, chưa thể quét thêm hàng.';
+  }
+  if (paymentModal && paymentModal.style.display !== 'none' && paymentModal.style.display !== '') {
+    return 'Đang ở bước thanh toán. Hãy hoàn tất hoặc bấm Hủy trước khi quét thêm hàng.';
+  }
+  if (DOM.receiptModalOverlay && DOM.receiptModalOverlay.classList.contains('is-open')) {
+    return 'Hóa đơn vừa hoàn tất đang hiển thị. Hãy đóng hóa đơn để bắt đầu đơn mới rồi quét tiếp.';
+  }
+  return '';
+}
 
-  // 1. Tìm nhanh trong danh sách sản phẩm đã nạp ở client (khớp chính xác barcode dạng chuỗi)
+function clearScannerInput(selectInstead = false) {
+  if (!DOM.barcodeScannerInput) return;
+  if (selectInstead) {
+    DOM.barcodeScannerInput.focus();
+    DOM.barcodeScannerInput.select();
+  } else {
+    DOM.barcodeScannerInput.value = '';
+    DOM.barcodeScannerInput.focus();
+  }
+}
+
+function mapApiProductToPos(apiProd) {
+  return {
+    id: apiProd.id,
+    barcode: apiProd.barcode ? String(apiProd.barcode).trim() : '',
+    name: apiProd.name,
+    price: apiProd.price,
+    stock: apiProd.quantity,
+    image: apiProd.image,
+    icon: '📦',
+    unit: 'sp',
+  };
+}
+
+async function processBarcodeScan(barcode) {
+  const blockedReason = getScanBlockedReason();
+  if (blockedReason) {
+    playBeepSound('error');
+    showToast(blockedReason, 'error');
+    clearScannerInput();
+    return;
+  }
+
+  // 1. Tra nhanh trong danh sách đã nạp ở client (khớp chính xác chuỗi barcode, không dùng ID/SKU)
   let product = AppState.productList.find(
-    (item) => item.barcode && item.barcode.trim() === barcode
+    (item) => item.barcode && item.barcode === barcode
   );
 
-  // 2. Nếu chưa có trong client (hoặc mới thêm trên hệ thống), gọi API tra cứu
+  // 2. Chưa có ở client (ví dụ sản phẩm mới thêm) → tra cứu API
   if (!product) {
     try {
       const apiProd = await apiRequest(`${PRODUCTS_URL}/barcode/${encodeURIComponent(barcode)}`);
       if (apiProd) {
-        product = {
-          id: apiProd.id,
-          barcode: apiProd.barcode ? String(apiProd.barcode).trim() : '',
-          name: apiProd.name,
-          price: apiProd.price,
-          stock: apiProd.quantity,
-          image: apiProd.image,
-          icon: '📦',
-          unit: 'sp',
-        };
-        // Thêm vào danh sách client để lần sau tìm tức thì
+        product = mapApiProductToPos(apiProd);
         const existingIdx = AppState.productList.findIndex((p) => p.id === product.id);
         if (existingIdx >= 0) {
           AppState.productList[existingIdx] = product;
@@ -443,36 +475,83 @@ async function handleBarcodeScan(rawBarcode) {
         renderProductGrid();
       }
     } catch (err) {
-      // Không tìm thấy qua API
+      if (err && err.status && err.status !== 404) {
+        playBeepSound('error');
+        showToast(`Không thể tra cứu mã vạch "${barcode}": ${err.message}`, 'error');
+        clearScannerInput(true);
+        return;
+      }
+      if (!err || !err.status) {
+        playBeepSound('error');
+        showToast('Lỗi kết nối máy chủ, chưa tra cứu được mã vạch. Vui lòng thử quét lại.', 'error');
+        clearScannerInput(true);
+        return;
+      }
+      // 404: không có sản phẩm với mã này → xử lý bên dưới
     }
   }
 
-  if (product) {
-    if (product.stock <= 0) {
-      playBeepSound('error');
-      showToast(`Sản phẩm "${product.name}" đã hết hàng!`, 'error');
-      if (DOM.barcodeScannerInput) {
-        DOM.barcodeScannerInput.select();
-      }
-      return;
-    }
+  // Trạng thái có thể đã đổi trong lúc chờ API (ví dụ mở modal thanh toán)
+  const blockedAfterLookup = getScanBlockedReason();
+  if (blockedAfterLookup) {
+    playBeepSound('error');
+    showToast(blockedAfterLookup, 'error');
+    clearScannerInput();
+    return;
+  }
 
-    addProductToCart(product);
+  if (!product) {
+    playBeepSound('error');
+    showToast(`Không tìm thấy sản phẩm có mã vạch "${barcode}". Hệ thống không tự tạo sản phẩm mới.`, 'error');
+    clearScannerInput(true);
+    return;
+  }
+
+  if (product.stock <= 0) {
+    playBeepSound('error');
+    showToast(`Sản phẩm "${product.name}" đã hết hàng!`, 'error');
+    clearScannerInput(true);
+    return;
+  }
+
+  // Chỉ báo thành công khi giỏ hàng thực sự đã được cập nhật
+  const wasAdded = addProductToCart(product);
+  if (wasAdded) {
     playBeepSound('success');
-    if (DOM.barcodeScannerInput) {
-      DOM.barcodeScannerInput.value = '';
-      DOM.barcodeScannerInput.focus();
-    }
+    clearScannerInput();
   } else {
     playBeepSound('error');
-    showToast(`Không tìm thấy sản phẩm có mã vạch: "${barcode}"`, 'error');
-    if (DOM.barcodeScannerInput) {
-      DOM.barcodeScannerInput.select();
-    }
+    clearScannerInput(true);
   }
 }
 
-// Global sniffer cho máy quét ZEBEX (chế độ USB HID Keyboard)
+// Xếp hàng các lần quét để quét liên tiếp không bị mất mã và xử lý đúng thứ tự
+let barcodeScanChain = Promise.resolve();
+
+function handleBarcodeScan(rawBarcode) {
+  const barcode = (rawBarcode || '').trim();
+  if (!barcode) return barcodeScanChain;
+
+  barcodeScanChain = barcodeScanChain
+    .then(() => processBarcodeScan(barcode))
+    .catch((err) => {
+      console.error('Lỗi xử lý quét mã vạch:', err);
+      showToast('Có lỗi khi xử lý mã vạch, vui lòng thử lại.', 'error');
+    });
+  return barcodeScanChain;
+}
+
+// Giữ con trỏ ở ô quét khi không có ô nhập nào khác đang được dùng
+function keepScannerFocus() {
+  if (!DOM.barcodeScannerInput || getScanBlockedReason()) return;
+  const active = document.activeElement;
+  if (!active || active === document.body) {
+    DOM.barcodeScannerInput.focus();
+  }
+}
+
+// Global sniffer cho máy quét USB (HID Keyboard): chỉ dùng khi focus KHÔNG nằm ở ô nhập nào,
+// tránh chạy chồng với ô quét (nếu chạy chồng sẽ xử lý một mã hai lần và để sót mã trong ô).
 let barcodeSnifferBuffer = '';
 let lastSnifferKeyTime = 0;
 
@@ -505,22 +584,21 @@ function setupBarcodeScanner() {
   window.addEventListener('keydown', (e) => {
     if (e.key === 'F2') {
       e.preventDefault();
-      if (DOM.barcodeScannerInput) {
+      if (DOM.barcodeScannerInput && !getScanBlockedReason()) {
         DOM.barcodeScannerInput.focus();
         DOM.barcodeScannerInput.select();
       }
     }
   });
 
-  // Bắt luồng quét toàn cục nếu con trỏ không ở trong ô nhập liệu khác
+  // Bắt luồng quét khi con trỏ không ở trong bất kỳ ô nhập nào
   window.addEventListener('keydown', (e) => {
     const active = document.activeElement;
-    const isOtherInput =
+    const isTypingField =
       active &&
-      active !== DOM.barcodeScannerInput &&
       (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
-
-    if (isOtherInput) return;
+    if (isTypingField) return;
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
 
     const now = Date.now();
     const diff = now - lastSnifferKeyTime;
@@ -531,9 +609,6 @@ function setupBarcodeScanner() {
         e.preventDefault();
         const code = barcodeSnifferBuffer;
         barcodeSnifferBuffer = '';
-        if (DOM.barcodeScannerInput) {
-          DOM.barcodeScannerInput.value = code;
-        }
         handleBarcodeScan(code);
       } else {
         barcodeSnifferBuffer = '';
@@ -542,13 +617,13 @@ function setupBarcodeScanner() {
     }
 
     if (e.key.length === 1) {
-      if (diff > 80) {
-        barcodeSnifferBuffer = e.key;
-      } else {
-        barcodeSnifferBuffer += e.key;
-      }
+      // Máy quét gõ rất nhanh; khoảng cách lớn = gõ tay → bắt đầu chuỗi mới
+      barcodeSnifferBuffer = diff > 80 ? e.key : barcodeSnifferBuffer + e.key;
     }
   });
+
+  // Click ra vùng trống làm mất focus → trả focus về ô quét để quét liên tiếp không cần bấm chuột
+  document.addEventListener('click', () => setTimeout(keepScannerFocus, 0));
 }
 
 function addProductToCart(product) {
@@ -557,7 +632,7 @@ function addProductToCart(product) {
   if (existingCartItem) {
     if (existingCartItem.quantity + 1 > product.stock) {
       showToast(`Chỉ còn ${product.stock} sản phẩm "${product.name}" trong kho.`, 'error');
-      return;
+      return false;
     }
     existingCartItem.quantity += 1;
   } else {
@@ -575,6 +650,7 @@ function addProductToCart(product) {
   showToast(`Đã thêm "${product.name}" vào giỏ hàng.`, 'success');
   renderCart();
   updatePaymentValidation();
+  return true;
 }
 
 function increaseCartItemQuantity(productId) {
@@ -1249,6 +1325,9 @@ function togglePaymentMethod() {
 
 function closePaymentModal() {
   document.getElementById('paymentModal').style.display = 'none';
+  if (DOM.barcodeScannerInput) {
+    DOM.barcodeScannerInput.focus();
+  }
 }
 
 // Xác nhận trong modal thanh toán → đọc tên khách + phương thức, rồi mới

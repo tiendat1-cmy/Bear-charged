@@ -808,12 +808,13 @@ function applyPreviewZoom() {
 }
 
 // 13. Sinh vùng in A4 thực tế (#a4PrintContainer) và gọi window.print()
-function renderA4PrintContainer() {
+function renderA4PrintContainer(options = {}) {
     DOM.a4PrintContainer.innerHTML = '';
     const queue = getQueueItems();
     const cfg = State.config;
     const labelsPerSheet = cfg.columns * cfg.rows;
-    const isTest = State.contentOptions.testMode;
+    // In thử bấm từ nút "In thử" chỉ áp dụng cho đúng lần in này, không đổi trạng thái chung
+    const isTest = State.contentOptions.testMode || options.testMode === true;
 
     if (queue.length === 0 && !isTest) {
         showToast("Vui lòng chọn ít nhất 1 sản phẩm để in!", "error");
@@ -864,14 +865,29 @@ function renderA4PrintContainer() {
     return true;
 }
 
-function triggerPrintDialog() {
-    const ready = renderA4PrintContainer();
+// Mở hộp thoại in của TRÌNH DUYỆT bằng window.print().
+// Trang web không thể (và không được) tự chọn máy in: người dùng chọn máy Canon
+// ở mục "Máy in / Destination" trong hộp thoại. Nếu hộp thoại đang để
+// "Save as PDF" thì đó là đích in mặc định của trình duyệt, không phải do code.
+let isPrintPending = false;
+
+async function triggerPrintDialog(options = {}) {
+    if (isPrintPending) return;
+    const ready = renderA4PrintContainer(options);
     if (!ready) return;
 
-    // Chờ 50ms cho các phần tử SVG parse xong hoàn toàn rồi mở hộp thoại in
-    setTimeout(() => {
+    isPrintPending = true;
+    try {
+        // Chờ font + SVG mã vạch dựng xong để bản in ổn định
+        if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+        }
+        await new Promise(resolve => setTimeout(resolve, 60));
+        showToast('Trong hộp thoại in, hãy chọn máy in Canon ở mục "Máy in" (không chọn Save as PDF).', 'warning');
         window.print();
-    }, 60);
+    } finally {
+        isPrintPending = false;
+    }
 }
 
 // 14. Xử lý cài đặt và lưu mẫu tem
@@ -892,15 +908,21 @@ function syncInputsWithConfig() {
     DOM.currentTemplateBadge.innerHTML = `<i class="fa-solid fa-tag"></i> Đang chọn: <strong>${cfg.name}</strong>`;
 }
 
+// Đọc số từ ô nhập; giữ nguyên giá trị 0 (lề = 0 là hợp lệ), chỉ dùng mặc định khi ô trống/không phải số
+function numOr(value, fallback, { min = 0, integer = false } = {}) {
+    const n = integer ? parseInt(value, 10) : parseFloat(value);
+    return Number.isFinite(n) && n >= min ? n : fallback;
+}
+
 function readConfigFromInputs() {
-    State.config.columns = parseInt(DOM.cfgColumns.value, 10) || 5;
-    State.config.rows = parseInt(DOM.cfgRows.value, 10) || 13;
-    State.config.labelWidth = parseFloat(DOM.cfgLabelWidth.value) || 38;
-    State.config.labelHeight = parseFloat(DOM.cfgLabelHeight.value) || 21;
-    State.config.marginTop = parseFloat(DOM.cfgMarginTop.value) || 11.5;
-    State.config.marginLeft = parseFloat(DOM.cfgMarginLeft.value) || 8.0;
-    State.config.gapX = parseFloat(DOM.cfgGapX.value) || 0;
-    State.config.gapY = parseFloat(DOM.cfgGapY.value) || 0;
+    State.config.columns = numOr(DOM.cfgColumns.value, 5, { min: 1, integer: true });
+    State.config.rows = numOr(DOM.cfgRows.value, 13, { min: 1, integer: true });
+    State.config.labelWidth = numOr(DOM.cfgLabelWidth.value, 38, { min: 1 });
+    State.config.labelHeight = numOr(DOM.cfgLabelHeight.value, 21, { min: 1 });
+    State.config.marginTop = numOr(DOM.cfgMarginTop.value, 11.5);
+    State.config.marginLeft = numOr(DOM.cfgMarginLeft.value, 8.0);
+    State.config.gapX = numOr(DOM.cfgGapX.value, 0);
+    State.config.gapY = numOr(DOM.cfgGapY.value, 0);
 
     State.startPosition = Math.max(1, parseInt(DOM.cfgStartPosition.value, 10) || 1);
     State.offsetX = parseFloat(DOM.cfgOffsetX.value) || 0;
@@ -945,13 +967,10 @@ function saveCustomConfig() {
 // 15. Gắn sự kiện (Event Listeners)
 function setupEventListeners() {
     // Topbar actions
-    DOM.startPrintBtn.addEventListener('click', triggerPrintDialog);
+    DOM.startPrintBtn.addEventListener('click', () => triggerPrintDialog());
 
     DOM.testPrintBtn.addEventListener('click', () => {
-        State.contentOptions.testMode = true;
-        DOM.cfgTestMode.checked = true;
-        renderPreview();
-        triggerPrintDialog();
+        triggerPrintDialog({ testMode: true });
     });
 
     DOM.printGuideBtn.addEventListener('click', () => {
@@ -968,10 +987,7 @@ function setupEventListeners() {
 
     DOM.guideTestPrintBtn.addEventListener('click', () => {
         DOM.guideModalOverlay.classList.remove('open');
-        State.contentOptions.testMode = true;
-        DOM.cfgTestMode.checked = true;
-        renderPreview();
-        triggerPrintDialog();
+        triggerPrintDialog({ testMode: true });
     });
 
     // Cấp mã hàng loạt
@@ -1190,17 +1206,8 @@ async function init() {
     const shouldAutoPrint = await loadProducts();
 
     if (shouldAutoPrint) {
-        // Đảm bảo SVG mã vạch đã được render xong rồi mới mở hộp thoại
-        // Dùng setTimeout để trình duyệt có thời gian paint giao diện hoàn chỉnh
-        setTimeout(() => {
-            const ready = renderA4PrintContainer();
-            if (ready) {
-                // Chờ thêm 80ms cho SVG parse hoàn tất trước khi mở in
-                setTimeout(() => {
-                    window.print();
-                }, 80);
-            }
-        }, 200);
+        // Chờ trình duyệt paint xong rồi mở hộp thoại in (dùng chung logic với nút IN TEM NGAY)
+        setTimeout(() => triggerPrintDialog(), 200);
     }
 }
 
